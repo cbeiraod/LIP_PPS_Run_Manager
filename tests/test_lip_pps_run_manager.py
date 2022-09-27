@@ -9,12 +9,13 @@ def test_main():
 
 
 def test_run_manager():
-    John = RM.RunManager(Path("."))
-    assert John.path_storage == Path(".")
+    John = RM.RunManager(Path("./Run0001"))
+    assert John.path_directory == Path("./Run0001")
+    assert John.run_name == "Run0001"
 
 
 def test_fail_run_manager():
     try:
         RM.RunManager(".")
     except TypeError as e:
-        assert str(e) == ("The `path_to_run_storage` must be a Path type object, received object of type <class 'str'>")
+        assert str(e) == ("The `path_to_run_directory` must be a Path type object, received object of type <class 'str'>")
