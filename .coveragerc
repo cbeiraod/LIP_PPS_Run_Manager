@@ -1,0 +1,16 @@
+[paths]
+source =
+   src
+   */site-packages
+
+[run]
+branch = true
+source =
+    lip_pps_run_manager
+    tests
+parallel = true
+
+[report]
+show_missing = true
+precision = 2
+omit = *migrations*
