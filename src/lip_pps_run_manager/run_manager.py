@@ -3,24 +3,6 @@
 
 Contains classes and functions used to manage the runs and their tasks.
 
-Routine Listings
-----------------
-
-See Also
---------
-
-RunManager : Class to manage runs
-TaskManager : Class to manage tasks
-
-Notes
------
-
-References
-----------
-
-Examples
---------
-
 """
 
 import datetime
