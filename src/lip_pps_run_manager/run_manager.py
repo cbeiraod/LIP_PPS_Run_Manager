@@ -510,6 +510,21 @@ class TaskManager(RunManager):
 
         if self._script_to_backup is not None:
             if self._script_to_backup.is_file():
-                shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
+                outPath = self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1]))
+                with open(outPath) as out_file:
+                    out_file.write("# ----------------------------------------------------------------------\n")
+                    out_file.write("# This is an automatic backup of the script that processed this task.\n")
+                    out_file.write("# Please note that the same script may process multiple tasks, so it may show up multiple times.\n")
+                    out_file.write("# The original location and name of the script was {}.\n".format(self._script_to_backup))
+                    out_file.write("# The backup was create on {}.\n".format(datetime.datetime.now()))
+                    out_file.write("# A copy of all the local variables at the time of the copy can be found below:\n")
+                    _locals = locals()
+                    for key in _locals:
+                        out_file.write("#   {}: {}\n".format(key, repr(_locals[key])))
+                    out_file.write("# ----------------------------------------------------------------------\n")
+                    with open(self._script_to_backup) as in_file:
+                        for line in in_file:
+                            out_file.write(line)
+                # shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
             else:
                 raise RuntimeError("Somehow you are trying to backup a file that does not exist")
