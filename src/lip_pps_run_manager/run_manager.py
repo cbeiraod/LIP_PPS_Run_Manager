@@ -6,6 +6,7 @@ Contains classes and functions used to manage the runs and their tasks.
 """
 
 import datetime
+import shutil
 import traceback
 from pathlib import Path
 
@@ -448,3 +449,55 @@ class TaskManager(RunManager):
     def task_path(self) -> Path:
         """The task path property getter method"""
         return self.get_task_path(self.task_name)
+
+    def clean_task_directory(self):
+        """Clean directory of task of all previous data
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> with John.handle_task("myTask") as taskHandler:
+        ...   (taskHandler.task_path/"testFile.tmp").touch()
+        ...   taskHandler.clean_task_directory()
+        ...   print((taskHandler.task_path/"testFile.tmp").is_file())
+        """
+        for p in self.task_path.iterdir():
+            if p.is_file():
+                p.unlink()
+            else:  # p.is_dir():
+                shutil.rmtree(p)
+
+    def __enter__(self):
+        """This is the method that is called when using the "with" syntax"""
+        if hasattr(self, "_already_processed"):
+            raise RuntimeError("Once a task has processed its data, it can not be processed again. Use a new task")
+
+        if self._drop_old_data and self.task_path.is_dir():
+            self.clean_task_directory()
+        self.task_path.mkdir(exist_ok=True)
+
+        return self
+
+    def __exit__(self, err_type, err_value, err_traceback):
+        """This is the method that is called at the end of the block, when using the "with" syntax"""
+        self._already_processed = True
+
+        with open(self.task_path / "task_report.txt", "w") as out_file:
+            if all([err is None for err in [err_type, err_value, err_traceback]]):
+                out_file.write("Task completed successfully with no errors\n")
+                out_file.write("The task finished running on: {}.\n".format(datetime.datetime.now()))
+            else:
+                out_file.write("Task could not be completed because there were errors\n")
+                out_file.write("The task finished running on: {}\n".format(datetime.datetime.now()))
+                out_file.write("--------\n")
+                traceback.print_tb(err_traceback, file=out_file)
+                out_file.write("\n")
+                out_file.write("{}: {}\n".format(err_type.__name__, err_value))
+
+        if self._script_to_backup is not None:
+            if self._script_to_backup.is_file():
+                shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
+            else:
+                raise RuntimeError("Somehow you are trying to backup a file that does not exist")
