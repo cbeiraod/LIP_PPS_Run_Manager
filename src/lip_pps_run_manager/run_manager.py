@@ -239,3 +239,36 @@ class RunManager:
     def run_name(self) -> str:
         """The name of the run"""
         return self._path_directory.parts[-1]
+
+    def create_run(self, raise_error: bool = False):
+        """Creates a run where this `RunManager` is pointing to.
+
+        Parameters
+        ----------
+        raise_error
+            If `True` a `RuntimeError` is raised if the run already exists.
+            If `False` no error is raised whether the run exists or not.
+
+        Raises
+        ------
+        RuntimeError
+            If the `raise_error` parameter is `True` and the run already
+            exists or if the run directory already exists.
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run(True)
+
+        The above code should create the Run0001 directory if it doesn't
+        exist or exit with a `RuntimeError` if it does.
+
+        """
+        if run_exists(self.path_directory.parent, self.run_name):
+            if raise_error:
+                raise RuntimeError(
+                    "Can not create run '{}', in '{}' because it already exists.".format(self.run_name, self.path_directory.parent)
+                )
+        else:
+            create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
