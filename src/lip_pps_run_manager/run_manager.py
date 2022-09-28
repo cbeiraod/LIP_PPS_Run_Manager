@@ -6,6 +6,7 @@ Contains classes and functions used to manage the runs and their tasks.
 """
 
 import datetime
+import inspect
 import shutil
 import traceback
 from pathlib import Path
@@ -531,6 +532,9 @@ class TaskManager(RunManager):
             self.clean_task_directory()
         self.task_path.mkdir(exist_ok=True)
 
+        frame = inspect.currentframe()
+        self._locals_on_call = frame.f_back.f_locals
+
         return self
 
     def __exit__(self, err_type, err_value, err_traceback):
@@ -560,10 +564,9 @@ class TaskManager(RunManager):
                     out_file.write("# Please note that the same script may process multiple tasks, so it may show up multiple times.\n")
                     out_file.write("# The original location and name of the script was {}.\n".format(self._script_to_backup))
                     out_file.write("# The backup was create on {}.\n".format(datetime.datetime.now()))
-                    out_file.write("# A copy of all the local variables at the time of the copy can be found below:\n")
-                    _locals = locals()
-                    for key in _locals:
-                        out_file.write("#   {}: {}\n".format(key, repr(_locals[key])))
+                    out_file.write("# A copy of all the local variables at the time the __enter__ method started:\n")
+                    for key in self._locals_on_call:
+                        out_file.write("#   {}: {}\n".format(key, repr(self._locals_on_call[key])))
                     out_file.write("# ------------------------------------------------------------------------------------------------\n")
                     with open(self._script_to_backup, "r") as in_file:
                         for line in in_file:
