@@ -24,6 +24,7 @@ Examples
 """
 
 import datetime
+import traceback
 from pathlib import Path
 
 from lip_pps_run_manager import __version__
@@ -273,6 +274,67 @@ class RunManager:
                 )
         else:
             create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
+
+    def handle_task(self, task_name: str, drop_old_data: bool = True, backup_python_file: bool = True):
+        """Method that creates a handle to a manager for a specific task
+
+        The `TaskManager` that is created is under the current
+        `RunManager`.
+
+        Parameters
+        ----------
+        task_name
+            The name of the task which is going to be processed
+        drop_old_data
+            If a previous directory with the same name as this tasks
+            exists, this flag controls whether that data is removed or
+            not. Useful when testing and rerunning multiple times, in
+            order to ensure that old data from previous runs is cleaned.
+        backup_python_file
+            If `True` a copy of the current python file will be backed
+            up in the task directory. Useful for keeping a log of
+            exactly what was done.
+
+        Raises
+        ------
+        TypeError
+            If any parameter has the incorrect type
+
+        Returns
+        -------
+        TaskManager
+            The `TaskManager` to handle the task.
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> with John.handle_task("myTask") as taskHandler:
+        ...   print("Processing task")
+
+        The above code should create the Run0001 directory and then
+        create a subdirectory for the task "myTask".
+        """
+
+        if not isinstance(task_name, str):
+            raise TypeError("The `task_name` must be a str " "type object, received object of type {}".format(type(task_name)))
+
+        if not isinstance(drop_old_data, bool):
+            raise TypeError("The `drop_old_data` must be a bool " "type object, received object of type {}".format(type(drop_old_data)))
+
+        if not isinstance(backup_python_file, bool):
+            raise TypeError(
+                "The `backup_python_file` must be a bool " "type object, received object of type {}".format(type(backup_python_file))
+            )
+
+        script_to_backup = None
+        if backup_python_file:
+            script_to_backup = Path(traceback.extract_stack()[-2].filename)
+
+        return TaskManager(
+            path_to_run=self.path_directory, task_name=task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup
+        )
 
 
 class TaskManager(RunManager):
