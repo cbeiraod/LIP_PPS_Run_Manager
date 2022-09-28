@@ -75,6 +75,45 @@ def clean_path(path_to_clean: Path) -> Path:
     return Path(".")
 
 
+def run_exists(path_to_directory: Path, run_name: str) -> bool:
+    """Check if a given run already exists in a given directory
+
+    Parameters
+    ----------
+    path_to_directory
+        The path to the directory where to check if the run exists
+
+    run_name
+        The name of the run to check for
+
+    Raises
+    ------
+    TypeError
+        If either of the parameters has the wrong type
+
+    Returns
+    -------
+    bool
+        `True` if the run already exists, `False` if it does not exist.
+
+    Examples
+    --------
+    >>> import lip_pps_run_manager.run_manager as RM
+    >>> print(RM.run_exists(Path("."), "Run0001"))
+    """
+
+    if not isinstance(path_to_directory, Path):
+        raise TypeError("The `path_to_directory` must be a Path " "type object, received object of type {}".format(type(path_to_directory)))
+    if not isinstance(run_name, str):
+        raise TypeError("The `run_name` must be a str " "type object, received object of type {}".format(type(run_name)))
+
+    run_path = path_to_directory / run_name
+
+    # TODO: Add check for invalid characters
+
+    return (run_path / 'run_info.txt').is_file()
+
+
 class RunManager:
     """Class to manage PPS Runs
 
