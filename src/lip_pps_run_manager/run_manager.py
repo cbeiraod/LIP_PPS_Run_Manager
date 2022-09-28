@@ -22,7 +22,10 @@ Examples
 
 """
 
+import datetime
 from pathlib import Path
+
+from lip_pps_run_manager import __version__
 
 
 def clean_path(path_to_clean: Path) -> Path:
@@ -112,6 +115,62 @@ def run_exists(path_to_directory: Path, run_name: str) -> bool:
     # TODO: Add check for invalid characters
 
     return (run_path / 'run_info.txt').is_file()
+
+
+def create_run(path_to_directory: Path, run_name: str) -> Path:
+    """Create a new run in a given directory
+
+    Parameters
+    ----------
+    path_to_directory
+        The path to the directory where to create the run
+
+    run_name
+        The name of the run to create
+
+    Raises
+    ------
+    TypeError
+        If either of the parameters has the wrong type
+
+    RuntimeError
+        If the run directory already exists
+
+    Returns
+    -------
+    Path
+        The path to the creaated run.
+
+    Examples
+    --------
+    >>> import lip_pps_run_manager.run_manager as RM
+    >>> print(RM.create_run(Path("."), "Run0001"))
+    """
+
+    if not isinstance(path_to_directory, Path):
+        raise TypeError("The `path_to_directory` must be a Path " "type object, received object of type {}".format(type(path_to_directory)))
+    if not isinstance(run_name, str):
+        raise TypeError("The `run_name` must be a str " "type object, received object of type {}".format(type(run_name)))
+
+    run_path = path_to_directory / run_name
+
+    # TODO: Add check for invalid characters
+
+    if run_path.is_dir():
+        raise RuntimeError(
+            "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format(run_name, path_to_directory)
+        )
+
+    run_path.mkdir(parents=True)
+
+    with open(run_path / "run_info.txt", "w") as out_file:
+        out_file.write(
+            "This directory contains data for the run '{}', created by the RunManager v{} on {}".format(
+                run_name, __version__, datetime.datetime.now()
+            )
+        )
+
+    return run_path
 
 
 class RunManager:
