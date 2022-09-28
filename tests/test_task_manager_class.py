@@ -142,3 +142,13 @@ def test_task_manager_with():
                 John4._script_to_backup = runPath
         except RuntimeError as e:
             assert str(e) == "Somehow you are trying to backup a file that does not exist"
+
+
+def test_task_manager_repr():
+    with PrepareRunDir() as handler:
+        runPath = handler.run_path
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+
+        assert repr(John) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
+            repr(runPath), repr("myTask"), repr(True), repr(None)
+        )

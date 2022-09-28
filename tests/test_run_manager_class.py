@@ -123,3 +123,39 @@ def test_fail_run_manager_handle_task():
         assert str(e) == ("The `backup_python_file` must be a bool type object, received object of type <class 'int'>")
 
     shutil.rmtree(runPath)
+
+
+def test_run_manager_repr():
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
+    John = RM.RunManager(runPath)
+
+    assert repr(John) == "RunManager({})".format(repr(runPath))
+
+
+def test_run_manager_task_ran_successfully():
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
+    John = RM.RunManager(runPath)
+    John.create_run(raise_error=True)
+
+    with John.handle_task("myTask") as Oliver:
+        (Oliver.task_path / "output_file.txt").touch()
+
+    try:
+        with John.handle_task("myTask2") as Leopold:
+            (Leopold.task_path / "output_file.txt").touch()
+            raise RuntimeError("This is only to exit with a failed task")
+    except RuntimeError:
+        pass
+
+    assert John.task_ran_successfully("myTask")
+    assert not John.task_ran_successfully("myTask2")
+    assert not John.task_ran_successfully("myTask3")
+
+    try:
+        John.task_ran_successfully(2)
+    except TypeError as e:
+        assert str(e) == ("The `task_name` must be a str type object, received object of type <class 'int'>")
