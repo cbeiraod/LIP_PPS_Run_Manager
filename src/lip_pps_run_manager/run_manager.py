@@ -364,6 +364,49 @@ class RunManager:
 
         return self.path_directory / task_name
 
+    def task_ran_successfully(self, task_name: str) -> bool:
+        """Check if a task has completed with success
+
+        Parameters
+        ----------
+        task_name
+            The name of the task to check
+
+        Raises
+        ------
+        TypeError
+            If any parameter has the incorrect type
+
+        Returns
+        -------
+        bool
+            `True` if successfull, `False` otherwise
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> John.task_ran_successfully("myTask")
+
+        """
+
+        if not isinstance(task_name, str):
+            raise TypeError("The `task_name` must be a str type object, received object of type {}".format(type(task_name)))
+
+        success = False
+
+        try:
+            with open(self.get_task_path(task_name) / "task_report.txt", "r") as in_file:
+                for line in in_file:
+                    if "task_status: no errors" in line:
+                        success = True
+                        break
+        except FileNotFoundError:
+            pass
+
+        return success
+
 
 class TaskManager(RunManager):
     """Class to manage PPS Tasks
@@ -511,9 +554,9 @@ class TaskManager(RunManager):
         if self._script_to_backup is not None:
             if self._script_to_backup.is_file():
                 outPath = self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1]))
-                with open(outPath) as out_file:
-                    out_file.write("# ----------------------------------------------------------------------\n")
-                    out_file.write("# This is an automatic backup of the script that processed this task.\n")
+                with open(outPath, "w") as out_file:
+                    out_file.write("# ------------------------------------------------------------------------------------------------\n")
+                    out_file.write("# This is an automatic backup of the script that processed this task, made at the end of the task.\n")
                     out_file.write("# Please note that the same script may process multiple tasks, so it may show up multiple times.\n")
                     out_file.write("# The original location and name of the script was {}.\n".format(self._script_to_backup))
                     out_file.write("# The backup was create on {}.\n".format(datetime.datetime.now()))
@@ -521,8 +564,8 @@ class TaskManager(RunManager):
                     _locals = locals()
                     for key in _locals:
                         out_file.write("#   {}: {}\n".format(key, repr(_locals[key])))
-                    out_file.write("# ----------------------------------------------------------------------\n")
-                    with open(self._script_to_backup) as in_file:
+                    out_file.write("# ------------------------------------------------------------------------------------------------\n")
+                    with open(self._script_to_backup, "r") as in_file:
                         for line in in_file:
                             out_file.write(line)
                 # shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
