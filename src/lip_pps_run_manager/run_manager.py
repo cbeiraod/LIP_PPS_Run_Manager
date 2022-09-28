@@ -431,6 +431,9 @@ class TaskManager(RunManager):
         if not run_exists(path_to_directory=path_to_run.parent, run_name=path_to_run.parts[-1]):
             raise RuntimeError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
 
+        if script_to_backup is not None and not script_to_backup.is_file():
+            raise RuntimeError("The 'script_to_backup', if set, must point to a file. It points to: {}".format(script_to_backup))
+
         super().__init__(path_to_run_directory=path_to_run)
         self._task_name = task_name
         self._drop_old_data = drop_old_data
