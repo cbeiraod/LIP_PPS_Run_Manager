@@ -69,3 +69,19 @@ def test_fail_task_manager():
             RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
         except RuntimeError as e:
             assert str(e) == ("The 'path_to_run' ({}) does not look like the directory of a run...".format(runPath))
+
+
+def test_task_manager_clean_task_directory():
+    with PrepareRunDir() as handler:
+        runPath = handler.run_path
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John.task_path.mkdir()
+
+        (John.task_path / "testFile.tmp").touch()
+        (John.task_path / "testDir").mkdir()
+        assert (John.task_path / "testFile.tmp").is_file()
+        assert (John.task_path / "testDir").is_dir()
+
+        John.clean_task_directory()
+        assert not (John.task_path / "testFile.tmp").is_file()
+        assert not (John.task_path / "testDir").is_dir()
