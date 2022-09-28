@@ -1,4 +1,5 @@
 import shutil
+import tempfile
 from pathlib import Path
 
 import lip_pps_run_manager as RM
@@ -6,7 +7,8 @@ import lip_pps_run_manager.run_manager as internalRM
 
 
 def test_run_manager():
-    John = RM.RunManager(Path("/tmp/Run0001"))
+    tmpdir = tempfile.gettempdir()
+    John = RM.RunManager(Path(tmpdir) / "Run0001")
     assert John.path_directory == Path("/tmp/Run0001")
     assert John.run_name == "Run0001"
 
@@ -19,7 +21,8 @@ def test_fail_run_manager():
 
 
 def test_run_manager_create_run():
-    runPath = Path("/tmp/Run0001")
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
     assert runPath.is_dir()
@@ -39,7 +42,8 @@ def test_run_manager_create_run():
 
 
 def test_run_manager_handle_task():
-    runPath = Path("/tmp/Run0001")
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
 
@@ -49,7 +53,8 @@ def test_run_manager_handle_task():
 
 
 def test_fail_run_manager_handle_task():
-    runPath = Path("/tmp/Run0001")
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
 
@@ -72,13 +77,14 @@ def test_fail_run_manager_handle_task():
 
 
 def test_run_exists_function():
+    tmpdir = tempfile.gettempdir()
     runName = "hopefully_unique_run_name"
-    p = Path("/tmp") / runName
+    p = Path(tmpdir) / runName
     p.mkdir(exist_ok=True)
     (p / 'run_info.txt').touch()
-    assert internalRM.run_exists(Path("/tmp"), runName)  # Test when exists
+    assert internalRM.run_exists(Path(tmpdir), runName)  # Test when exists
     shutil.rmtree(p)
-    assert not internalRM.run_exists(Path("/tmp"), runName)  # Test when doesn't exist
+    assert not internalRM.run_exists(Path(tmpdir), runName)  # Test when doesn't exist
 
 
 def test_fail_run_exists_function():
@@ -106,7 +112,8 @@ def test_fail_clean_path_function():
 
 
 def test_create_run_function():
-    basePath = Path("/tmp")
+    tmpdir = tempfile.gettempdir()
+    basePath = Path(tmpdir)
     runName = "testRun_21"
 
     assert internalRM.create_run(basePath, runName) == basePath / runName
@@ -118,7 +125,8 @@ def test_create_run_function():
 
 
 def test_fail_create_run_function():
-    basePath = Path("/tmp")
+    tmpdir = tempfile.gettempdir()
+    basePath = Path(tmpdir)
     runName = "testRun_21"
 
     try:
