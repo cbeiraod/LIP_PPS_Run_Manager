@@ -10,6 +10,7 @@ See Also
 --------
 
 RunManager : Class to manage runs
+TaskManager : Class to manage tasks
 
 Notes
 -----
@@ -272,3 +273,26 @@ class RunManager:
                 )
         else:
             create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
+
+
+class TaskManager(RunManager):
+    _task_name = ""
+    _drop_old_data = True
+    _script_to_backup = Path("")
+
+    def __init__(self, path_to_run: Path, task_name: str, drop_old_data: bool = True, script_to_backup: Path = None):
+        if not run_exists(path_to_directory=path_to_run.parent, run_name=path_to_run.parts[-1]):
+            raise ValueError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
+
+        super().__init__(path_to_run_directory=path_to_run)
+        self._task_name = task_name
+        self._drop_old_data = drop_old_data
+        self._script_to_backup = script_to_backup
+
+    @property
+    def task_name(self) -> str:
+        return self._task_name
+
+    @property
+    def task_directory(self) -> Path:
+        return 2
