@@ -234,3 +234,8 @@ class RunManager:
     #    where I can check it's not assigned a value < 0
     #    """
     #    self._path_directory = value
+
+    @property
+    def run_name(self) -> str:
+        """The name of the run"""
+        return self._path_directory.parts[-1]
