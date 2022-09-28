@@ -336,6 +336,47 @@ class RunManager:
             path_to_run=self.path_directory, task_name=task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup
         )
 
+    def get_task_directory(self, task_name: str) -> Path:
+        """Retrieve the `Path` of a given task
+
+        Parameters
+        ----------
+        task_name
+            The name of the task of which to get the path
+
+        Raises
+        ------
+        TypeError
+            If any parameter has the incorrect type
+
+        Returns
+        -------
+        Path
+            The `Path` to the task directory.
+
+        Warnings
+        --------
+        The returned directory may or may not exist.
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> with John.handle_task("myTask") as taskHandler:
+        ...   print("Processing task")
+        >>> John.get_task_directory("myTask")
+
+        The example above is using the with syntax, which will ensure
+        the task directory is created.
+
+        """
+
+        if not isinstance(task_name, str):
+            raise TypeError("The `task_name` must be a str " "type object, received object of type {}".format(type(task_name)))
+
+        return self.path_directory / task_name
+
 
 class TaskManager(RunManager):
     _task_name = ""

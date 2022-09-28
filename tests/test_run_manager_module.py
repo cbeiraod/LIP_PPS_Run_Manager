@@ -41,6 +41,34 @@ def test_run_manager_create_run():
     shutil.rmtree(runPath)
 
 
+def test_run_manager_get_task_directory():
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    John = RM.RunManager(runPath)
+    John.create_run(raise_error=True)
+
+    path = John.get_task_directory("myTask")
+
+    assert isinstance(path, Path)
+    assert not path.is_dir()
+
+    shutil.rmtree(runPath)
+
+
+def test_fail_run_manager_get_task_directory():
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    John = RM.RunManager(runPath)
+    John.create_run(raise_error=True)
+
+    try:
+        John.get_task_directory(2)
+    except TypeError as e:
+        assert str(e) == ("The `task_name` must be a str type object, received object of type <class 'int'>")
+
+    shutil.rmtree(runPath)
+
+
 def test_run_manager_handle_task():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
