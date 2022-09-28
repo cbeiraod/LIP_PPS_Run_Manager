@@ -196,6 +196,10 @@ class RunManager:
             )
         self._path_directory = path_to_run_directory
 
+    def __repr__(self):
+        """Get the python representation of this class"""
+        return "RunManager({})".format(repr(self.path_directory))
+
     @property
     def path_directory(self) -> Path:
         """The path directory property getter method
@@ -440,6 +444,12 @@ class TaskManager(RunManager):
         self._drop_old_data = drop_old_data
         self._script_to_backup = script_to_backup
 
+    def __repr__(self):
+        """Get the python representation of this class"""
+        return "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
+            repr(self.path_directory), repr(self.task_name), repr(self._drop_old_data), repr(self._script_to_backup)
+        )
+
     @property
     def task_name(self) -> str:
         """The task name property getter method"""
@@ -486,9 +496,11 @@ class TaskManager(RunManager):
 
         with open(self.task_path / "task_report.txt", "w") as out_file:
             if all([err is None for err in [err_type, err_value, err_traceback]]):
+                out_file.write("task_status: no errors\n")
                 out_file.write("Task completed successfully with no errors\n")
                 out_file.write("The task finished running on: {}.\n".format(datetime.datetime.now()))
             else:
+                out_file.write("task_status: there were errors\n")
                 out_file.write("Task could not be completed because there were errors\n")
                 out_file.write("The task finished running on: {}\n".format(datetime.datetime.now()))
                 out_file.write("--------\n")
