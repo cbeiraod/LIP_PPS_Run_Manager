@@ -85,3 +85,4 @@ def test_task_manager_clean_task_directory():
         John.clean_task_directory()
         assert not (John.task_path / "testFile.tmp").is_file()
         assert not (John.task_path / "testDir").is_dir()
+        assert next(John.task_path.iterdir(), None) is None
