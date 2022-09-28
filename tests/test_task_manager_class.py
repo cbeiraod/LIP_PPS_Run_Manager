@@ -107,7 +107,7 @@ def test_task_manager_with():
 
         with open(John.task_path / "task_report.txt") as report_file:
             first_line = report_file.readline()
-            assert first_line == "Task completed successfully with no errors\n"  # Test that the content of the report file are correct
+            assert first_line == "Task completed successfully with no errors\n"  # Test that the content of the report file is correct
 
         try:
             with John as john:  # Test __enter__ not allowing to reuse a TaskManager
@@ -132,7 +132,7 @@ def test_task_manager_with():
             first_line = report_file.readline()
             assert (
                 first_line == "Task could not be completed because there were errors\n"
-            )  # Test that the content of the report file are correct
+            )  # Test that the content of the report file is correct
 
         assert (
             John3.task_path / "backup.{}".format(Path(traceback.extract_stack()[-1].filename).parts[-1])
