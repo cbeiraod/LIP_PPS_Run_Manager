@@ -10,8 +10,8 @@ def test_main():
 
 
 def test_run_manager():
-    John = RM.RunManager(Path("./Run0001"))
-    assert John.path_directory == Path("./Run0001")
+    John = RM.RunManager(Path("/tmp/Run0001"))
+    assert John.path_directory == Path("/tmp/Run0001")
     assert John.run_name == "Run0001"
 
 
@@ -22,14 +22,67 @@ def test_fail_run_manager():
         assert str(e) == ("The `path_to_run_directory` must be a Path type object, received object of type <class 'str'>")
 
 
+def test_run_manager_create_run():
+    runPath = Path("/tmp/Run0001")
+    John = RM.RunManager(runPath)
+    John.create_run(raise_error=True)
+    assert runPath.is_dir()
+    try:
+        John.create_run(raise_error=True)
+    except RuntimeError as e:
+        assert str(e) == ("Can not create run '{}', in '{}' because it already exists.".format("Run0001", "/tmp"))
+    John.create_run(raise_error=False)
+    (runPath / "run_info.txt").unlink()
+    try:
+        John.create_run(raise_error=False)
+    except RuntimeError as e:
+        assert str(e) == (
+            "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format("Run0001", "/tmp")
+        )
+    shutil.rmtree(runPath)
+
+
+def test_run_manager_handle_task():
+    runPath = Path("/tmp/Run0001")
+    John = RM.RunManager(runPath)
+    John.create_run(raise_error=True)
+
+    TaskHandler = John.handle_task("myTask")
+    assert isinstance(TaskHandler, RM.TaskManager)
+    shutil.rmtree(runPath)
+
+
+def test_fail_run_manager_handle_task():
+    runPath = Path("/tmp/Run0001")
+    John = RM.RunManager(runPath)
+    John.create_run(raise_error=True)
+
+    try:
+        John.handle_task(1)
+    except TypeError as e:
+        assert str(e) == ("The `task_name` must be a str type object, received object of type <class 'int'>")
+
+    try:
+        John.handle_task("myTask", drop_old_data=1)
+    except TypeError as e:
+        assert str(e) == ("The `drop_old_data` must be a bool type object, received object of type <class 'int'>")
+
+    try:
+        John.handle_task("myTask", backup_python_file=1)
+    except TypeError as e:
+        assert str(e) == ("The `backup_python_file` must be a bool type object, received object of type <class 'int'>")
+
+    shutil.rmtree(runPath)
+
+
 def test_run_exists_function():
     runName = "hopefully_unique_run_name"
-    p = Path(".") / runName
+    p = Path("/tmp") / runName
     p.mkdir(exist_ok=True)
     (p / 'run_info.txt').touch()
-    assert RM.run_exists(Path("."), runName)  # Test when exists
+    assert RM.run_exists(Path("/tmp"), runName)  # Test when exists
     shutil.rmtree(p)
-    assert not RM.run_exists(Path("."), runName)  # Test when doesn't exist
+    assert not RM.run_exists(Path("/tmp"), runName)  # Test when doesn't exist
 
 
 def test_fail_run_exists_function():
