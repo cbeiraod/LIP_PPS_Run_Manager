@@ -12,9 +12,10 @@ def ensure_clean(path: Path):  # pragma: no cover
 
 def test_run_manager():
     tmpdir = tempfile.gettempdir()
-    ensure_clean(Path(tmpdir) / "Run0001")
-    John = RM.RunManager(Path(tmpdir) / "Run0001")
-    assert John.path_directory == Path(tmpdir) / "Run0001"
+    runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
+    John = RM.RunManager(runPath)
+    assert John.path_directory == runPath
     assert John.run_name == "Run0001"
 
 
