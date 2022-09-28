@@ -361,13 +361,73 @@ class RunManager:
 
 
 class TaskManager(RunManager):
+    """Class to manage PPS Tasks
+
+    This Class initializes the on disk structures if necessary.
+
+    Parameters
+    ----------
+    path_to_run
+        The path to the directory where all the run related information
+        is stored
+    task_name
+        The name of this task
+    drop_old_data
+        If a previous directory with the same name as this tasks
+        exists, this flag controls whether that data is removed or
+        not. Useful when testing and rerunning multiple times, in
+        order to ensure that old data from previous runs is cleaned.
+    script_to_backup
+        `Path` to the script to be backed up to the task directory
+
+    Attributes
+    ----------
+    path_directory
+    task_name
+    task_directory
+
+    Raises
+    ------
+    TypeError
+        If the parameter has the incorrect type
+    RuntimeError
+        If the paths point to the wrong types (i.e. not a file for a file)
+        If a directory which is not the directory of a run is passed
+
+    Examples
+    --------
+    It is recommended to always use this class through the `RunManager`
+    since it is necessary to have the underlying run directories and
+    files created. This is what is done in the example below, where the
+    `handle_task` method implicitly calls this class.
+
+    >>> import lip_pps_run_manager as RM
+    >>> John = RM.RunManager("Run0001")
+    >>> John.create_run()
+    >>> with John.handle_task("myTask") as taskHandler:
+    ...   print("Process task here...")
+
+    """
+
     _task_name = ""
     _drop_old_data = True
     _script_to_backup = Path("")
 
     def __init__(self, path_to_run: Path, task_name: str, drop_old_data: bool = True, script_to_backup: Path = None):
+        if not isinstance(path_to_run, Path):
+            raise TypeError("The `path_to_run` must be a Path type object, received object of type {}".format(type(path_to_run)))
+
+        if not isinstance(task_name, str):
+            raise TypeError("The `task_name` must be a str type object, received object of type {}".format(type(task_name)))
+
+        if not isinstance(drop_old_data, bool):
+            raise TypeError("The `drop_old_data` must be a bool type object, received object of type {}".format(type(drop_old_data)))
+
+        if not isinstance(script_to_backup, Path):
+            raise TypeError("The `script_to_backup` must be a Path type object, received object of type {}".format(type(script_to_backup)))
+
         if not run_exists(path_to_directory=path_to_run.parent, run_name=path_to_run.parts[-1]):
-            raise ValueError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
+            raise RuntimeError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
 
         super().__init__(path_to_run_directory=path_to_run)
         self._task_name = task_name
