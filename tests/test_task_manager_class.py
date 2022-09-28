@@ -17,7 +17,10 @@ class PrepareRunDir:
         return self._run_path
 
     def __enter__(self):
-        self.run_path.mkdir(parents=True, exist_ok=True)
+        if self.run_path.exists():  # pragma: no cover
+            shutil.rmtree(self.run_path)
+
+        self.run_path.mkdir(parents=True)
 
         if self._create_run_info:
             (self.run_path / "run_info.txt").touch()
