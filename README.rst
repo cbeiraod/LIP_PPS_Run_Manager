@@ -15,7 +15,7 @@ Overview
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
-.. |docs| image:: https://readthedocs.org/projects/LIP_PPS_Run_Manager/badge/?style=flat
+.. |docs| image:: https://readthedocs.org/projects/lip-pps-run-manager/badge/?version=latest
     :target: https://LIP_PPS_Run_Manager.readthedocs.io/
     :alt: Documentation Status
 
