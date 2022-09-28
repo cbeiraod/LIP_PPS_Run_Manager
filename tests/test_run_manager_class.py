@@ -5,8 +5,14 @@ from pathlib import Path
 import lip_pps_run_manager as RM
 
 
+def ensure_clean(path: Path):  # pragma: no cover
+    if path.exists() and path.is_dir():
+        shutil.rmtree(path)
+
+
 def test_run_manager():
     tmpdir = tempfile.gettempdir()
+    ensure_clean(Path(tmpdir) / "Run0001")
     John = RM.RunManager(Path(tmpdir) / "Run0001")
     assert John.path_directory == Path(tmpdir) / "Run0001"
     assert John.run_name == "Run0001"
@@ -22,6 +28,7 @@ def test_fail_run_manager():
 def test_run_manager_create_run():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
     assert runPath.is_dir()
@@ -40,13 +47,14 @@ def test_run_manager_create_run():
     shutil.rmtree(runPath)
 
 
-def test_run_manager_get_task_directory():
+def test_run_manager_get_task_path():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
 
-    path = John.get_task_directory("myTask")
+    path = John.get_task_path("myTask")
 
     assert isinstance(path, Path)
     assert not path.is_dir()
@@ -54,14 +62,15 @@ def test_run_manager_get_task_directory():
     shutil.rmtree(runPath)
 
 
-def test_fail_run_manager_get_task_directory():
+def test_fail_run_manager_get_task_path():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
 
     try:
-        John.get_task_directory(2)
+        John.get_task_path(2)
     except TypeError as e:
         assert str(e) == ("The `task_name` must be a str type object, received object of type <class 'int'>")
 
@@ -71,17 +80,21 @@ def test_fail_run_manager_get_task_directory():
 def test_run_manager_handle_task():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
 
     TaskHandler = John.handle_task("myTask")
     assert isinstance(TaskHandler, RM.TaskManager)
+    assert TaskHandler.task_name == "myTask"
+    assert TaskHandler.task_path == runPath / "myTask"
     shutil.rmtree(runPath)
 
 
 def test_fail_run_manager_handle_task():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
     John = RM.RunManager(runPath)
     John.create_run(raise_error=True)
 

@@ -221,7 +221,7 @@ class RunManager:
 
     @property
     def run_name(self) -> str:
-        """The name of the run"""
+        """The name of the run property getter method"""
         return self._path_directory.parts[-1]
 
     def create_run(self, raise_error: bool = False):
@@ -318,7 +318,7 @@ class RunManager:
             path_to_run=self.path_directory, task_name=task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup
         )
 
-    def get_task_directory(self, task_name: str) -> Path:
+    def get_task_path(self, task_name: str) -> Path:
         """Retrieve the `Path` of a given task
 
         Parameters
@@ -384,7 +384,7 @@ class TaskManager(RunManager):
     ----------
     path_directory
     task_name
-    task_directory
+    task_path
 
     Raises
     ------
@@ -423,8 +423,10 @@ class TaskManager(RunManager):
         if not isinstance(drop_old_data, bool):
             raise TypeError("The `drop_old_data` must be a bool type object, received object of type {}".format(type(drop_old_data)))
 
-        if not isinstance(script_to_backup, Path):
-            raise TypeError("The `script_to_backup` must be a Path type object, received object of type {}".format(type(script_to_backup)))
+        if script_to_backup is not None and not isinstance(script_to_backup, Path):
+            raise TypeError(
+                "The `script_to_backup` must be a Path type object or None, received object of type {}".format(type(script_to_backup))
+            )
 
         if not run_exists(path_to_directory=path_to_run.parent, run_name=path_to_run.parts[-1]):
             raise RuntimeError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
@@ -436,8 +438,10 @@ class TaskManager(RunManager):
 
     @property
     def task_name(self) -> str:
+        """The task name property getter method"""
         return self._task_name
 
     @property
-    def task_directory(self) -> Path:
-        return 2
+    def task_path(self) -> Path:
+        """The task path property getter method"""
+        return self.get_task_path(self.task_name)
