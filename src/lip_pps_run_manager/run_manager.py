@@ -25,6 +25,56 @@ Examples
 from pathlib import Path
 
 
+def clean_path(path_to_clean: Path) -> Path:
+    """Clean a path from dangerous characters
+
+    Some characters are not recommended/supported by a given filesystem.
+    To make matters worse, the set of supported characters varies from
+    operating system to operating system. In order to make sure this
+    code is portable and that things remain compatible, we choose a
+    subset of characters on which to limit the paths used. The subset is
+    essentially all letters (lower and upper case), all numbers
+    augmented with the dot, underscore and dash.
+
+    Parameters
+    ----------
+    path_to_clean
+        The path to the directory to clean
+
+    Raises
+    ------
+    TypeError
+        If the parameter has the wrong type
+
+    Returns
+    -------
+    Path
+        The `path_to_clean` path cleaned of all characters not part of
+        the reduced set
+
+    Examples
+    --------
+    >>> import lip_pps_run_manager.run_manager as RM
+    >>> print(RM.clean_path(Path("/tmp/2@#_run")))
+    """
+
+    if not isinstance(path_to_clean, Path):
+        raise TypeError("The `path_to_clean` must be a Path type object, received object of type {}".format(type(path_to_clean)))
+
+    # SafeCharacters = {
+    # 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+    # 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+    # 'W', 'X', 'Y', 'Z',
+    # 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+    # 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+    # 'w', 'x', 'y', 'z',
+    # '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.',
+    # '_', '-'
+    # }
+
+    return Path(".")
+
+
 class RunManager:
     """Class to manage PPS Runs
 
