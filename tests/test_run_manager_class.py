@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+import traceback
 from pathlib import Path
 
 import lip_pps_run_manager as RM
@@ -89,6 +90,13 @@ def test_run_manager_handle_task():
     assert isinstance(TaskHandler, RM.TaskManager)
     assert TaskHandler.task_name == "myTask"
     assert TaskHandler.task_path == runPath / "myTask"
+    assert TaskHandler._script_to_backup == Path(traceback.extract_stack()[-1].filename)
+
+    TaskHandler2 = John.handle_task("myTask2", backup_python_file=False)
+    assert isinstance(TaskHandler2, RM.TaskManager)
+    assert TaskHandler2.task_name == "myTask2"
+    assert TaskHandler2.task_path == runPath / "myTask2"
+    assert TaskHandler2._script_to_backup is None
     shutil.rmtree(runPath)
 
 
