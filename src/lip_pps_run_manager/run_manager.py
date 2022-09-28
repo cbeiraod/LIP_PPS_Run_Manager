@@ -90,9 +90,9 @@ def run_exists(path_to_directory: Path, run_name: str) -> bool:
     """
 
     if not isinstance(path_to_directory, Path):
-        raise TypeError("The `path_to_directory` must be a Path " "type object, received object of type {}".format(type(path_to_directory)))
+        raise TypeError("The `path_to_directory` must be a Path type object, received object of type {}".format(type(path_to_directory)))
     if not isinstance(run_name, str):
-        raise TypeError("The `run_name` must be a str " "type object, received object of type {}".format(type(run_name)))
+        raise TypeError("The `run_name` must be a str type object, received object of type {}".format(type(run_name)))
 
     run_path = path_to_directory / run_name
 
@@ -132,9 +132,9 @@ def create_run(path_to_directory: Path, run_name: str) -> Path:
     """
 
     if not isinstance(path_to_directory, Path):
-        raise TypeError("The `path_to_directory` must be a Path " "type object, received object of type {}".format(type(path_to_directory)))
+        raise TypeError("The `path_to_directory` must be a Path type object, received object of type {}".format(type(path_to_directory)))
     if not isinstance(run_name, str):
-        raise TypeError("The `run_name` must be a str " "type object, received object of type {}".format(type(run_name)))
+        raise TypeError("The `run_name` must be a str type object, received object of type {}".format(type(run_name)))
 
     run_path = path_to_directory / run_name
 
@@ -191,7 +191,7 @@ class RunManager:
     def __init__(self, path_to_run_directory: Path):
         if not isinstance(path_to_run_directory, Path):
             raise TypeError(
-                "The `path_to_run_directory` must be a Path " "type object, received object of type {}".format(type(path_to_run_directory))
+                "The `path_to_run_directory` must be a Path type object, received object of type {}".format(type(path_to_run_directory))
             )
         self._path_directory = path_to_run_directory
 
@@ -300,14 +300,14 @@ class RunManager:
         """
 
         if not isinstance(task_name, str):
-            raise TypeError("The `task_name` must be a str " "type object, received object of type {}".format(type(task_name)))
+            raise TypeError("The `task_name` must be a str type object, received object of type {}".format(type(task_name)))
 
         if not isinstance(drop_old_data, bool):
-            raise TypeError("The `drop_old_data` must be a bool " "type object, received object of type {}".format(type(drop_old_data)))
+            raise TypeError("The `drop_old_data` must be a bool type object, received object of type {}".format(type(drop_old_data)))
 
         if not isinstance(backup_python_file, bool):
             raise TypeError(
-                "The `backup_python_file` must be a bool " "type object, received object of type {}".format(type(backup_python_file))
+                "The `backup_python_file` must be a bool type object, received object of type {}".format(type(backup_python_file))
             )
 
         script_to_backup = None
@@ -355,7 +355,7 @@ class RunManager:
         """
 
         if not isinstance(task_name, str):
-            raise TypeError("The `task_name` must be a str " "type object, received object of type {}".format(type(task_name)))
+            raise TypeError("The `task_name` must be a str type object, received object of type {}".format(type(task_name)))
 
         return self.path_directory / task_name
 
