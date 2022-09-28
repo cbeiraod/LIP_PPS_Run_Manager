@@ -188,11 +188,11 @@ class RunManager:
 
     Attributes
     ----------
-    path_storage
+    path_directory
 
     Raises
     ------
-    ValueError
+    TypeError
         If the parameter has the incorrect type
 
     Examples
@@ -202,17 +202,22 @@ class RunManager:
 
     """
 
-    _path_storage = Path(".")
-    """Internal copy of the directory for the run related information
+    _path_directory = Path(".")
 
-    Do not use this attribute, use the associated property
-    """
+    def __init__(self, path_to_run_directory: Path):
+        if not isinstance(path_to_run_directory, Path):
+            raise TypeError(
+                "The `path_to_run_directory` must be a Path " "type object, received object of type {}".format(type(path_to_run_directory))
+            )
+        self._path_directory = path_to_run_directory
 
     @property
-    def path_storage(self):
-        """The path storage property getter method
+    def path_directory(self) -> Path:
+        """The path directory property getter method
 
-        This method fetches the path_storage internal attribute
+        This method fetches the path_directory internal attribute,
+        which contains the path to the directory containing the run
+        information for this run.
 
         Returns
         -------
@@ -220,17 +225,12 @@ class RunManager:
             The path to the directory where the run information
             is stored.
         """
-        return self._path_storage
+        return self._path_directory
 
-    # @path_storage.setter
-    # def path_storage(self, value):
+    # @path_directory.setter
+    # def path_directory(self, value):
     #    """
     #    This is the setter method
     #    where I can check it's not assigned a value < 0
     #    """
-    #    self._path_storage = value
-
-    def __init__(self, path_to_run_storage: Path):
-        if type(path_to_run_storage) != Path:
-            raise ValueError("The path_to_run_storage must be a Path type object")
-        self.path_storage = path_to_run_storage
+    #    self._path_directory = value
