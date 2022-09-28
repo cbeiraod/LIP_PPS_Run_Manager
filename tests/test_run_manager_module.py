@@ -9,7 +9,7 @@ import lip_pps_run_manager.run_manager as internalRM
 def test_run_manager():
     tmpdir = tempfile.gettempdir()
     John = RM.RunManager(Path(tmpdir) / "Run0001")
-    assert John.path_directory == Path("/tmp/Run0001")
+    assert John.path_directory == Path(tmpdir) / "Run0001"
     assert John.run_name == "Run0001"
 
 
@@ -29,14 +29,14 @@ def test_run_manager_create_run():
     try:
         John.create_run(raise_error=True)
     except RuntimeError as e:
-        assert str(e) == ("Can not create run '{}', in '{}' because it already exists.".format("Run0001", "/tmp"))
+        assert str(e) == ("Can not create run '{}', in '{}' because it already exists.".format("Run0001", tmpdir))
     John.create_run(raise_error=False)
     (runPath / "run_info.txt").unlink()
     try:
         John.create_run(raise_error=False)
     except RuntimeError as e:
         assert str(e) == (
-            "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format("Run0001", "/tmp")
+            "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format("Run0001", tmpdir)
         )
     shutil.rmtree(runPath)
 
