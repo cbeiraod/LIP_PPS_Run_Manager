@@ -130,7 +130,70 @@ class TelegramReporter:
             )
 
         try:
-            return self._send_message(str(message_text), reply_to_message_id)
+            return self._send_message(message_text, reply_to_message_id)
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            warnings.warn("Failed sending to telegram. Reason: {}".format(repr(e)), category=RuntimeWarning)
+
+    def _edit_message(self, message_text: str, message_id: str):
+        """Internal function to edit a message that was previously sent to the chat using the bot.
+
+        This is the internal counterpart to `edit_message`. Avoid calling
+        this function, since there are no checks on variable types or
+        protections for exceptions. This function implements the base
+        functionality of editing a message on telegram.
+
+        Parameters
+        ----------
+        message_text
+            The message the bot should change to message to
+        message_id
+            The ID of the message to edit
+
+        """
+        self._session.post(
+            "https://api.telegram.org/bot{}/editMessageText".format(self.bot_token),
+            data={
+                "chat_id": self.chat_id,
+                "text": message_text,
+                "message_id": message_id,
+            },
+            timeout=1,
+        )
+
+    def edit_message(self, message_text: str, message_id: str):
+        """Edit a message that was previously sent to the chat using the bot.
+
+        Parameters
+        ----------
+        message_text
+            The message the bot should change to message to
+        message_id
+            The ID of the message to edit
+
+        Raises
+        ------
+        TypeError
+            If a parameter has the wrong type
+        Warning
+            If any irregularity, leading to an exception occurs, it is reinterpreted as a warning
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> bot = RM.TelegramReporter("SecretBotToken", "PostToThisChat_ID")
+        >>> bot.edit_message("New Message", "OldMessage_ID")
+
+        """
+        if not isinstance(message_text, str):
+            raise TypeError("The `message_text` must be a str type object, received object of type {}".format(type(message_text)))
+
+        if not isinstance(message_id, str):
+            raise TypeError("The `message_id` must be a str type object, received object of type {}".format(type(message_id)))
+
+        try:
+            return self._edit_message(message_text, message_id)
         except KeyboardInterrupt:
             raise
         except Exception as e:
