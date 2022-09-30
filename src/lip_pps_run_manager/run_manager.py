@@ -12,6 +12,7 @@ import traceback
 from pathlib import Path
 
 from lip_pps_run_manager import __version__
+from lip_pps_run_manager.telegram_reporter import TelegramReporter
 
 
 def clean_path(path_to_clean: Path) -> Path:
@@ -171,6 +172,10 @@ class RunManager:
         is stored. Typically, there will be multiple processing
         steps/tasks applied to a single run and each will have its data
         stored in a single subdirectory.
+    telegram_bot_token
+        The telegram bot token to use (this value should be a secret, so do not share it) for the `TelegramReporter`, if any.
+    telegram_chat_id
+        The telegram chat ID the reporter should send messages to
 
     Attributes
     ----------
@@ -179,7 +184,7 @@ class RunManager:
     Raises
     ------
     TypeError
-        If the parameter has the incorrect type
+        If a parameter has the incorrect type
 
     Examples
     --------
@@ -189,13 +194,30 @@ class RunManager:
     """
 
     _path_directory = Path(".")
+    _bot_token = None
+    _chat_id = None
+    _telegram_reporter = None
 
-    def __init__(self, path_to_run_directory: Path):
+    def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None):
         if not isinstance(path_to_run_directory, Path):
             raise TypeError(
                 "The `path_to_run_directory` must be a Path type object, received object of type {}".format(type(path_to_run_directory))
             )
+
+        if telegram_bot_token is not None and not isinstance(telegram_bot_token, str):
+            raise TypeError(
+                "The `telegram_bot_token` must be a str type object, received object of type {}".format(type(telegram_bot_token))
+            )
+
+        if telegram_chat_id is not None and not isinstance(telegram_chat_id, str):
+            raise TypeError("The `telegram_chat_id` must be a str type object, received object of type {}".format(type(telegram_chat_id)))
+
         self._path_directory = path_to_run_directory
+
+        if telegram_bot_token is not None and telegram_chat_id is not None:
+            self._bot_token = telegram_bot_token
+            self._chat_id = telegram_chat_id
+            self._telegram_reporter = TelegramReporter(telegram_bot_token, telegram_chat_id)
 
     def __repr__(self):
         """Get the python representation of this class"""

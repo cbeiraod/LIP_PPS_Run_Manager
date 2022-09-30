@@ -47,7 +47,6 @@ class TelegramReporter:
     _session = None
 
     def __init__(self, bot_token: str, chat_id: str):
-
         if not isinstance(bot_token, str):
             raise TypeError("The `bot_token` must be a str type object, received object of type {}".format(type(bot_token)))
 
