@@ -570,6 +570,14 @@ class TaskManager(RunManager):
         """The task path property getter method"""
         return self.get_task_path(self.task_name)
 
+    @property
+    def processed_iterations(self) -> Path:
+        """The processed iterations property getter method"""
+        return self._processed_iterations
+
+    def loop_tick(self):
+        self._processed_iterations += 1
+
     def clean_task_directory(self):
         """Clean directory of task of all previous data
 
