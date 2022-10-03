@@ -124,7 +124,7 @@ def test_run_manager_handle_task():
     John._telegram_reporter._session = SessionReplacement()  # To avoid sending actual http requests
     John.create_run(raise_error=True)
 
-    TaskHandler = John.handle_task("myTask")
+    TaskHandler = John.handle_task("myTask", telegram_loop_iterations=20)
     assert isinstance(TaskHandler, RM.TaskManager)
     assert TaskHandler.task_name == "myTask"
     assert TaskHandler.task_path == runPath / "myTask"
@@ -160,6 +160,11 @@ def test_fail_run_manager_handle_task():
         John.handle_task("myTask", backup_python_file=1)
     except TypeError as e:
         assert str(e) == ("The `backup_python_file` must be a bool type object, received object of type <class 'int'>")
+
+    try:
+        John.handle_task("myTask", telegram_loop_iterations="2")
+    except TypeError as e:
+        assert str(e) == ("The `telegram_loop_iterations` must be a int type object or None, received object of type <class 'str'>")
 
     shutil.rmtree(runPath)
 
