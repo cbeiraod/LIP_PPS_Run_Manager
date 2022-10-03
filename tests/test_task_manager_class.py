@@ -35,11 +35,14 @@ class PrepareRunDir:
 def test_task_manager():
     with PrepareRunDir() as handler:
         runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, loop_iterations=20)
         assert isinstance(John, RM.TaskManager)
         assert John.task_name == "myTask"
         assert John.task_path == runPath / "myTask"
         assert not (runPath / "myTask").is_dir()
+        assert John.processed_iterations == 0
+        John.loop_tick()
+        assert John.processed_iterations == 1
 
 
 def test_fail_task_manager():
