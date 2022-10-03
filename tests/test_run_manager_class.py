@@ -122,7 +122,7 @@ def test_run_manager_handle_task():
     ensure_clean(runPath)
     John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
     John._telegram_reporter._session = SessionReplacement()  # To avoid sending actual http requests
-    John.create_run(raise_error=True)
+    # John.create_run(raise_error=True)
 
     TaskHandler = John.handle_task("myTask", telegram_loop_iterations=20)
     assert isinstance(TaskHandler, RM.TaskManager)
