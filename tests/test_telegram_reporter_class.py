@@ -166,3 +166,11 @@ def test_fail_telegram_reporter_edit_message():
         reporter.edit_message(message_text=message, message_id=message_id)
     except RuntimeWarning as e:
         assert str(e) == "Failed sending to telegram. Reason: Exception()"
+
+
+def test_telegram_reporter_repr():
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    reporter = RM.TelegramReporter(bot_token, chat_id)
+
+    assert repr(reporter) == "TelegramReporter({}, {})".format(repr(bot_token), repr(chat_id))
