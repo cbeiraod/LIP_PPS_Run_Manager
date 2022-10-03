@@ -451,6 +451,16 @@ class TaskManager(RunManager):
         order to ensure that old data from previous runs is cleaned.
     script_to_backup
         `Path` to the script to be backed up to the task directory
+    telegram_bot_token
+        The telegram bot token to use (this value should be a secret, so
+        do not share it) for the `TelegramReporter`, if any.
+    telegram_chat_id
+        The telegram chat ID the reporter should send messages to
+    loop_iterations
+        The number of iterations in the loop of the task being
+        processed. This value is used mostly for the telegram reporting
+        in order to report the current status of the task progress. Use
+        `loop_tick()` to keep track of progress during the loop.
 
     Raises
     ------
@@ -478,8 +488,19 @@ class TaskManager(RunManager):
     _task_name = ""
     _drop_old_data = True
     _script_to_backup = Path("")
+    _loop_iterations = None
+    _processed_iterations = None
 
-    def __init__(self, path_to_run: Path, task_name: str, drop_old_data: bool = True, script_to_backup: Path = None):
+    def __init__(
+        self,
+        path_to_run: Path,
+        task_name: str,
+        drop_old_data: bool = True,
+        script_to_backup: Path = None,
+        telegram_bot_token: str = None,
+        telegram_chat_id: str = None,
+        loop_iterations: int = None,
+    ):
         if not isinstance(path_to_run, Path):
             raise TypeError("The `path_to_run` must be a Path type object, received object of type {}".format(type(path_to_run)))
 
@@ -494,22 +515,50 @@ class TaskManager(RunManager):
                 "The `script_to_backup` must be a Path type object or None, received object of type {}".format(type(script_to_backup))
             )
 
+        if telegram_bot_token is not None and not isinstance(telegram_bot_token, str):
+            raise TypeError(
+                "The `telegram_bot_token` must be a str type object or None, received object of type {}".format(type(telegram_bot_token))
+            )
+
+        if telegram_chat_id is not None and not isinstance(telegram_chat_id, str):
+            raise TypeError(
+                "The `telegram_chat_id` must be a str type object or None, received object of type {}".format(type(telegram_chat_id))
+            )
+
+        if loop_iterations is not None and not isinstance(loop_iterations, int):
+            raise TypeError(
+                "The `loop_iterations` must be a int type object or None, received object of type {}".format(type(loop_iterations))
+            )
+
         if not run_exists(path_to_directory=path_to_run.parent, run_name=path_to_run.parts[-1]):
             raise RuntimeError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
 
         if script_to_backup is not None and not script_to_backup.is_file():
             raise RuntimeError("The 'script_to_backup', if set, must point to a file. It points to: {}".format(script_to_backup))
 
-        super().__init__(path_to_run_directory=path_to_run)
+        super().__init__(path_to_run_directory=path_to_run, telegram_bot_token=telegram_bot_token, telegram_chat_id=telegram_chat_id)
         self._task_name = task_name
         self._drop_old_data = drop_old_data
         self._script_to_backup = script_to_backup
+        self._loop_iterations = loop_iterations
+        if loop_iterations is not None:
+            self._processed_iterations = 0
 
     def __repr__(self):
         """Get the python representation of this class"""
-        return "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
-            repr(self.path_directory), repr(self.task_name), repr(self._drop_old_data), repr(self._script_to_backup)
-        )
+        if self._telegram_reporter is None:
+            return "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
+                repr(self.path_directory), repr(self.task_name), repr(self._drop_old_data), repr(self._script_to_backup)
+            )
+        else:
+            return "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, telegram_bot_token={}, telegram_chat_id={})".format(
+                repr(self.path_directory),
+                repr(self.task_name),
+                repr(self._drop_old_data),
+                repr(self._script_to_backup),
+                repr(self._bot_token),
+                repr(self._chat_id),
+            )
 
     @property
     def task_name(self) -> str:
