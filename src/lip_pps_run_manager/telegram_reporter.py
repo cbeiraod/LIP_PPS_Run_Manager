@@ -57,6 +57,10 @@ class TelegramReporter:
         self._chat_id = chat_id
         self._session = requests.Session()
 
+    def __repr__(self):
+        """Get the python representation of this class"""
+        return "TelegramReporter({}, {})".format(repr(self.bot_token), repr(self.chat_id))
+
     @property
     def bot_token(self) -> str:
         """The token of the telegram bot property getter method"""
