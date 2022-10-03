@@ -286,7 +286,9 @@ class RunManager:
         else:
             create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
 
-    def handle_task(self, task_name: str, drop_old_data: bool = True, backup_python_file: bool = True):
+    def handle_task(
+        self, task_name: str, drop_old_data: bool = True, backup_python_file: bool = True, telegram_loop_iterations: int = None
+    ):
         """Method that creates a handle to a manager for a specific task
 
         The `TaskManager` that is created is under the current
@@ -305,6 +307,10 @@ class RunManager:
             If `True` a copy of the current python file will be backed
             up in the task directory. Useful for keeping a log of
             exactly what was done.
+        telegram_loop_iterations
+            If telegram reporting is enabled, this is the number of
+            expected iterations in the processing loop. Use
+            `loop_tick()` to keep track of progress during the loop.
 
         Raises
         ------
@@ -339,13 +345,30 @@ class RunManager:
                 "The `backup_python_file` must be a bool type object, received object of type {}".format(type(backup_python_file))
             )
 
+        if telegram_loop_iterations is not None and not isinstance(telegram_loop_iterations, int):
+            raise TypeError(
+                "The `telegram_loop_iterations` must be a int type object or None, received object of type {}".format(
+                    type(telegram_loop_iterations)
+                )
+            )
+
         script_to_backup = None
         if backup_python_file:
             script_to_backup = Path(traceback.extract_stack()[-2].filename)
 
-        return TaskManager(
-            path_to_run=self.path_directory, task_name=task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup
+        TM = TaskManager(
+            path_to_run=self.path_directory,
+            task_name=task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=telegram_loop_iterations,
         )
+        if self._telegram_reporter is not None:
+            TM._bot_token = self._bot_token
+            TM._chat_id = self._chat_id
+            TM._telegram_reporter = self._telegram_reporter
+
+        return TM
 
     def get_task_path(self, task_name: str) -> Path:
         """Retrieve the `Path` of a given task
