@@ -147,8 +147,19 @@ def test_task_manager_with():
 def test_task_manager_repr():
     with PrepareRunDir() as handler:
         runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        bot_token = "bot_token"
+        chat_id = "chat_id"
 
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
         assert repr(John) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
             repr(runPath), repr("myTask"), repr(True), repr(None)
+        )
+
+        John = RM.TaskManager(
+            runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_bot_token=bot_token, telegram_chat_id=chat_id
+        )
+        assert repr(
+            John
+        ) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, telegram_bot_token={}, telegram_chat_id={})".format(
+            repr(runPath), repr("myTask"), repr(True), repr(None), repr(bot_token), repr(chat_id)
         )
