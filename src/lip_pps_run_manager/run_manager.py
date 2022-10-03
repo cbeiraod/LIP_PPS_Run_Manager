@@ -177,10 +177,6 @@ class RunManager:
     telegram_chat_id
         The telegram chat ID the reporter should send messages to
 
-    Attributes
-    ----------
-    path_directory
-
     Raises
     ------
     TypeError
@@ -450,12 +446,6 @@ class TaskManager(RunManager):
         order to ensure that old data from previous runs is cleaned.
     script_to_backup
         `Path` to the script to be backed up to the task directory
-
-    Attributes
-    ----------
-    path_directory
-    task_name
-    task_path
 
     Raises
     ------
