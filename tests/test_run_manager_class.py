@@ -145,9 +145,15 @@ def test_run_manager_repr():
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
     ensure_clean(runPath)
-    John = RM.RunManager(runPath)
 
+    John = RM.RunManager(runPath)
     assert repr(John) == "RunManager({})".format(repr(runPath))
+    ensure_clean(runPath)
+
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    assert repr(John) == "RunManager({}, telegram_bot_token={}, telegram_chat_id={})".format(repr(runPath), repr(bot_token), repr(chat_id))
 
 
 def test_run_manager_task_ran_successfully():
