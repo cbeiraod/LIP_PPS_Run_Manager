@@ -19,12 +19,28 @@ def test_run_manager():
     assert John.path_directory == runPath
     assert John.run_name == "Run0001"
 
+    John = RM.RunManager(runPath, telegram_bot_token="bot_token", telegram_chat_id="chat_id")
+    assert isinstance(John._telegram_reporter, RM.TelegramReporter)
+
 
 def test_fail_run_manager():
     try:
         RM.RunManager(".")
     except TypeError as e:
         assert str(e) == ("The `path_to_run_directory` must be a Path type object, received object of type <class 'str'>")
+
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
+
+    try:
+        RM.RunManager(runPath, telegram_bot_token=2)
+    except TypeError as e:
+        assert str(e) == ("The `telegram_bot_token` must be a str type object, received object of type <class 'int'>")
+    try:
+        RM.RunManager(runPath, telegram_chat_id=2)
+    except TypeError as e:
+        assert str(e) == ("The `telegram_chat_id` must be a str type object, received object of type <class 'int'>")
 
 
 def test_run_manager_create_run():
