@@ -96,10 +96,15 @@ def test_fail_run_manager_get_task_path():
 
 
 def test_run_manager_handle_task():
+    from test_telegram_reporter_class import SessionReplacement
+
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    bot_token = "bot_token"
+    chat_id = "chat_id"
     ensure_clean(runPath)
-    John = RM.RunManager(runPath)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John._telegram_reporter._session = SessionReplacement()  # To avoid sending actual http requests
     John.create_run(raise_error=True)
 
     TaskHandler = John.handle_task("myTask")
@@ -107,6 +112,7 @@ def test_run_manager_handle_task():
     assert TaskHandler.task_name == "myTask"
     assert TaskHandler.task_path == runPath / "myTask"
     assert TaskHandler._script_to_backup == Path(traceback.extract_stack()[-1].filename)
+    assert isinstance(TaskHandler._telegram_reporter, RM.TelegramReporter)
 
     TaskHandler2 = John.handle_task("myTask2", backup_python_file=False)
     assert isinstance(TaskHandler2, RM.TaskManager)
