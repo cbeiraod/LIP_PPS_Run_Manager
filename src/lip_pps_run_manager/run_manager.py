@@ -193,6 +193,7 @@ class RunManager:
     _bot_token = None
     _chat_id = None
     _telegram_reporter = None
+    _run_created = False
 
     def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None):
         if not isinstance(path_to_run_directory, Path):
@@ -286,6 +287,8 @@ class RunManager:
         else:
             create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
 
+        self._run_created = True
+
         if self._telegram_reporter is not None:
             self._telegram_reporter.send_message("Started processing Run {}".format(self.run_name))
 
@@ -355,6 +358,9 @@ class RunManager:
                 )
             )
 
+        if not self._run_created:
+            self.create_run(True)
+
         script_to_backup = None
         if backup_python_file:
             script_to_backup = Path(traceback.extract_stack()[-2].filename)
@@ -366,6 +372,7 @@ class RunManager:
             script_to_backup=script_to_backup,
             loop_iterations=telegram_loop_iterations,
         )
+        TM._run_created = self._run_created
         if self._telegram_reporter is not None:
             TM._bot_token = self._bot_token
             TM._chat_id = self._chat_id
