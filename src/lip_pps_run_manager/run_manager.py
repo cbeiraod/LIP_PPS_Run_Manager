@@ -608,8 +608,28 @@ class TaskManager(RunManager):
         """The processed iterations property getter method"""
         return self._processed_iterations
 
-    def loop_tick(self):
-        self._processed_iterations += 1
+    def loop_tick(self, count: int = 1):
+        """Increase the internal loop count
+
+        When skipping multiple iterations, you can use the count
+        parameter to increase the counter for multiple iterations.
+
+        Parameters
+        ----------
+        count
+            The amount by which to increase the internal loop counter,
+            by default, this parameter is set to 1
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> with John.handle_task("myTask") as taskHandler:
+        ...   # Do work
+        ...   taskHandler.loop_tick()
+        """
+        self._processed_iterations += count
 
     def clean_task_directory(self):
         """Clean directory of task of all previous data
