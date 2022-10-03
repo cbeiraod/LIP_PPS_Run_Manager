@@ -167,7 +167,7 @@ class RunManager:
 
     Parameters
     ----------
-    path_to_run_storage
+    path_to_run_directory
         The path to the directory where all the run related information
         is stored. Typically, there will be multiple processing
         steps/tasks applied to a single run and each will have its data
