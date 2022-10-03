@@ -44,17 +44,33 @@ def test_fail_run_manager():
 
 
 def test_run_manager_create_run():
+    from test_telegram_reporter_class import SessionReplacement
+
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    sessionHandler = SessionReplacement()
     ensure_clean(runPath)
-    John = RM.RunManager(runPath)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+
     John.create_run(raise_error=True)
+
     assert runPath.is_dir()
+    httpRequest = sessionHandler.json()
+    assert httpRequest["timeout"] == 1
+    assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+    assert httpRequest["data"]['chat_id'] == chat_id
+    # assert httpRequest["data"]['text'] == message  # Not testing the message so that we are free to change as needed
+
     try:
         John.create_run(raise_error=True)
     except RuntimeError as e:
         assert str(e) == ("Can not create run '{}', in '{}' because it already exists.".format("Run0001", tmpdir))
+
     John.create_run(raise_error=False)
+
     (runPath / "run_info.txt").unlink()
     try:
         John.create_run(raise_error=False)
@@ -62,6 +78,7 @@ def test_run_manager_create_run():
         assert str(e) == (
             "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format("Run0001", tmpdir)
         )
+
     shutil.rmtree(runPath)
 
 
