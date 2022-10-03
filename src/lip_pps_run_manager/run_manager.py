@@ -217,7 +217,12 @@ class RunManager:
 
     def __repr__(self):
         """Get the python representation of this class"""
-        return "RunManager({})".format(repr(self.path_directory))
+        if self._telegram_reporter is None:
+            return "RunManager({})".format(repr(self.path_directory))
+        else:
+            return "RunManager({}, telegram_bot_token={}, telegram_chat_id={})".format(
+                repr(self.path_directory), repr(self._bot_token), repr(self._chat_id)
+            )
 
     @property
     def path_directory(self) -> Path:
