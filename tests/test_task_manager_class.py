@@ -62,6 +62,21 @@ def test_fail_task_manager():
             assert str(e) == ("The `drop_old_data` must be a bool type object, received object of type <class 'int'>")
 
         try:
+            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_bot_token=20)
+        except TypeError as e:
+            assert str(e) == ("The `telegram_bot_token` must be a str type object or None, received object of type <class 'int'>")
+
+        try:
+            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_chat_id=20)
+        except TypeError as e:
+            assert str(e) == ("The `telegram_chat_id` must be a str type object or None, received object of type <class 'int'>")
+
+        try:
+            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, loop_iterations="20")
+        except TypeError as e:
+            assert str(e) == ("The `loop_iterations` must be a int type object or None, received object of type <class 'str'>")
+
+        try:
             RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=2)
         except TypeError as e:
             assert str(e) == ("The `script_to_backup` must be a Path type object or None, received object of type <class 'int'>")
