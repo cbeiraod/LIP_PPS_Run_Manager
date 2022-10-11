@@ -691,6 +691,9 @@ class TaskManager(RunManager):
         if loop_iterations is not None:
             self._processed_iterations = 0
 
+    def __del__(self):  # We do this so that the base class destructor is not called by default
+        pass
+
     def __repr__(self):
         """Get the python representation of this class"""
         if self._telegram_reporter is None:
