@@ -12,6 +12,10 @@ def ensure_clean(path: Path):  # pragma: no cover
 
 
 def test_run_manager():
+    from test_telegram_reporter_class import SessionReplacement
+
+    sessionHandler = SessionReplacement()
+
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
     ensure_clean(runPath)
@@ -20,6 +24,7 @@ def test_run_manager():
     assert John.run_name == "Run0001"
 
     John = RM.RunManager(runPath, telegram_bot_token="bot_token", telegram_chat_id="chat_id")
+    John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
     assert isinstance(John._telegram_reporter, RM.TelegramReporter)
 
 
@@ -170,6 +175,10 @@ def test_fail_run_manager_handle_task():
 
 
 def test_run_manager_repr():
+    from test_telegram_reporter_class import SessionReplacement
+
+    sessionHandler = SessionReplacement()
+
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
     ensure_clean(runPath)
@@ -181,6 +190,7 @@ def test_run_manager_repr():
     bot_token = "bot_token"
     chat_id = "chat_id"
     John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
     assert repr(John) == "RunManager({}, telegram_bot_token={}, telegram_chat_id={})".format(repr(runPath), repr(bot_token), repr(chat_id))
 
 
