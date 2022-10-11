@@ -98,6 +98,21 @@ def test_fail_task_manager():
             assert str(e) == ("The `script_to_backup` must be a Path type object or None, received object of type <class 'int'>")
 
         try:
+            RM.TaskManager(runPath, "myTask", drop_old_data=True, loop_iterations="2")
+        except TypeError as e:
+            assert str(e) == ("The `loop_iterations` must be a int type object or None, received object of type <class 'str'>")
+
+        try:
+            RM.TaskManager(runPath, "myTask", drop_old_data=True, minimum_update_time_seconds="2")
+        except TypeError as e:
+            assert str(e) == ("The `minimum_update_time_seconds` must be a int type object, received object of type <class 'str'>")
+
+        try:
+            RM.TaskManager(runPath, "myTask", drop_old_data=True, minimum_warn_time_seconds="2")
+        except TypeError as e:
+            assert str(e) == ("The `minimum_warn_time_seconds` must be a int type object, received object of type <class 'str'>")
+
+        try:
             RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
         except RuntimeError as e:
             assert str(e) == ("The 'path_to_run' ({}) does not look like the directory of a run...".format(runPath))
