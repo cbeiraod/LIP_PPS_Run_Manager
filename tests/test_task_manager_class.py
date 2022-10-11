@@ -122,12 +122,6 @@ def test_task_manager_clean_task_directory():
         assert not (John.task_path / "testDir").is_dir()
         assert next(John.task_path.iterdir(), None) is None
 
-        try:
-            John2 = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-            John2.clean_task_directory()
-        except RuntimeError as e:
-            assert str(e) == ("Can not create run '{}', in '{}' because it already exists.".format(handler.run_name, handler.run_dir))
-
 
 def test_task_manager_with():
     with PrepareRunDir() as handler:
