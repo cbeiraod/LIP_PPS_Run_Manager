@@ -297,10 +297,11 @@ class RunManager:
         else:
             create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
 
-        self._run_created = True
+        if not self._status_message_id:
+            if self._telegram_reporter is not None:
+                self._status_message_id = self.send_message("🚀🚀🚀 Started processing Run {}".format(self.run_name))
 
-        if self._telegram_reporter is not None:
-            self._telegram_reporter.send_message("Started processing Run {}".format(self.run_name))
+        self._run_created = True
 
     def handle_task(
         self, task_name: str, drop_old_data: bool = True, backup_python_file: bool = True, telegram_loop_iterations: int = None
