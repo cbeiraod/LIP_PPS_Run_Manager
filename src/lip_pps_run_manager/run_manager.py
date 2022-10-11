@@ -631,7 +631,7 @@ class TaskManager(RunManager):
         ...   taskHandler.loop_tick()
         """
         if not self._in_task_context:
-            RuntimeError("Tried calling loop_tick() while not inside a task loop. Use the 'with TaskManager as handle' syntax")
+            RuntimeError("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
         self._processed_iterations += count
 
