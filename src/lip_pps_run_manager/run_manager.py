@@ -575,6 +575,7 @@ class TaskManager(RunManager):
         self._drop_old_data = drop_old_data
         self._script_to_backup = script_to_backup
         self._loop_iterations = loop_iterations
+        self._in_task_context = False
         if loop_iterations is not None:
             self._processed_iterations = 0
 
@@ -631,7 +632,7 @@ class TaskManager(RunManager):
         ...   taskHandler.loop_tick()
         """
         if not self._in_task_context:
-            RuntimeError("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+            raise RuntimeError("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
         self._processed_iterations += count
 
