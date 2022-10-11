@@ -9,6 +9,11 @@ class SessionReplacement:
         self._error_type = error_type
         pass
 
+    def __getitem__(self, key: str):
+        if key == 'result':
+            return {'message_id': "This is the message ID"}
+        raise RuntimeError("Unknown key: {}".format(key))
+
     def get(self, url: str, data=None, timeout=None):
         self._params = {}
 
