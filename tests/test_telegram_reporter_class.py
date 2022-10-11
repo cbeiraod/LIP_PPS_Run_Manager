@@ -12,7 +12,9 @@ class SessionReplacement:
     def __getitem__(self, key: str):
         if key == 'result':
             return {'message_id': "This is the message ID"}
-        raise RuntimeError("Unknown key: {}".format(key))
+        if key in self._params:
+            return self._params[key]
+        raise RuntimeError("Unknown key: {}".format(key))  # pragma: no cover
 
     def get(self, url: str, data=None, timeout=None):
         self._params = {}
@@ -43,7 +45,7 @@ class SessionReplacement:
                 raise Exception()
 
     def json(self):
-        return self._params
+        return self
 
 
 def test_telegram_reporter():
