@@ -101,6 +101,7 @@ def test_task_manager_clean_task_directory():
     with PrepareRunDir() as handler:
         runPath = handler.run_path
         John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John.create_run()
         John.task_path.mkdir()
 
         (John.task_path / "testFile.tmp").touch()
@@ -118,6 +119,7 @@ def test_task_manager_with():
     with PrepareRunDir() as handler:
         runPath = handler.run_path
         John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John.create_run()
 
         with John as john:
             (john.task_path / "task_file.txt").touch()
@@ -134,11 +136,13 @@ def test_task_manager_with():
             assert str(e) == ("Once a task has processed its data, it can not be processed again. Use a new task")
 
         John2 = RM.TaskManager(runPath, "myTask", drop_old_data=False, script_to_backup=None)
+        John2.create_run()
         with John2 as john:
             assert (john.task_path / "task_file.txt").is_file()  # Test __enter__ does not delete old files if not asked to
 
         try:
             John3 = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=Path(traceback.extract_stack()[-1].filename))
+            John3.create_run()
             with John3 as john:
                 assert not (john.task_path / "task_file.txt").is_file()  # Test __enter__ does delete old files when asked to
                 raise RuntimeError(
@@ -156,6 +160,7 @@ def test_task_manager_with():
 
         try:
             John4 = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=Path(traceback.extract_stack()[-1].filename))
+            John4.create_run()
             with John4 as john:
                 John4._script_to_backup = runPath
         except RuntimeError as e:
