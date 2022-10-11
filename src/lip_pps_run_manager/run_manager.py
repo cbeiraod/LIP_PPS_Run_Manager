@@ -636,6 +636,9 @@ class TaskManager(RunManager):
     _loop_iterations = None
     _processed_iterations = None
     _in_task_context = False
+    _task_status_message_id = None
+    _minimum_update_time = None
+    _minimum_warn_time = None
 
     def __init__(
         self,
@@ -646,6 +649,8 @@ class TaskManager(RunManager):
         telegram_bot_token: str = None,
         telegram_chat_id: str = None,
         loop_iterations: int = None,
+        minimum_update_time_seconds: int = 60,
+        minimum_warn_time_seconds: int = 60,
     ):
         if not isinstance(path_to_run, Path):
             raise TypeError("The `path_to_run` must be a Path type object, received object of type {}".format(type(path_to_run)))
@@ -676,6 +681,20 @@ class TaskManager(RunManager):
                 "The `loop_iterations` must be a int type object or None, received object of type {}".format(type(loop_iterations))
             )
 
+        if not isinstance(minimum_update_time_seconds, int):
+            raise TypeError(
+                "The `minimum_update_time_seconds` must be a int type object, received object of type {}".format(
+                    type(minimum_update_time_seconds)
+                )
+            )
+
+        if not isinstance(minimum_warn_time_seconds, int):
+            raise TypeError(
+                "The `minimum_warn_time_seconds` must be a int type object, received object of type {}".format(
+                    type(minimum_warn_time_seconds)
+                )
+            )
+
         if not run_exists(path_to_directory=path_to_run.parent, run_name=path_to_run.parts[-1]):
             raise RuntimeError("The 'path_to_run' ({}) does not look like the directory of a run...".format(path_to_run))
 
@@ -688,6 +707,8 @@ class TaskManager(RunManager):
         self._script_to_backup = script_to_backup
         self._loop_iterations = loop_iterations
         self._in_task_context = False
+        self._minimum_update_time = datetime.timedelta(seconds=float(minimum_update_time_seconds))
+        self._minimum_warn_time = datetime.timedelta(seconds=float(minimum_warn_time_seconds))
         if loop_iterations is not None:
             self._processed_iterations = 0
 
