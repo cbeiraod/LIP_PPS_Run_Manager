@@ -49,7 +49,12 @@ def test_task_manager():
         assert John.task_path == runPath / "myTask"
         assert not (runPath / "myTask").is_dir()
         assert John.processed_iterations == 0
-        John.loop_tick()
+        try:
+            John.loop_tick()
+        except RuntimeError as e:
+            assert str(e) == ("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+        with John as john:
+            john.loop_tick()
         assert John.processed_iterations == 1
 
 
