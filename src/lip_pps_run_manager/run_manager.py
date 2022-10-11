@@ -648,9 +648,6 @@ class TaskManager(RunManager):
         ...   taskHandler.clean_task_directory()
         ...   print((taskHandler.task_path/"testFile.tmp").is_file())
         """
-        if not self._run_created:
-            self.create_run(True)
-
         for p in self.task_path.iterdir():
             if p.is_file():
                 p.unlink()
@@ -659,9 +656,6 @@ class TaskManager(RunManager):
 
     def __enter__(self):
         """This is the method that is called when using the "with" syntax"""
-        if not self._run_created:
-            self.create_run(True)
-
         if hasattr(self, "_already_processed"):
             raise RuntimeError("Once a task has processed its data, it can not be processed again. Use a new task")
 
