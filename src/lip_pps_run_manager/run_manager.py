@@ -9,6 +9,7 @@ import datetime
 import inspect
 import shutil
 import traceback
+import warnings
 from pathlib import Path
 
 from lip_pps_run_manager import __version__
@@ -472,6 +473,107 @@ class RunManager:
             pass
 
         return success
+
+    def send_message(self, message: str, reply_to_message_id: str = None):
+        """Send a message to telegram
+
+        Parameters
+        ----------
+        message
+            The message to be sent
+        reply_to_message_id
+            If the message is a reply to another message, place the message ID here
+
+        Raises
+        ------
+        TypeError
+            If any parameter has the incorrect type
+        RuntimeError
+            If the telegram reporter is not configured
+        Warning
+            If any irregularity, during communication with telegram, it is reinterpreted as a warning
+
+        Returns
+        -------
+        message_id: str
+            The telegram message id of the message which was just written
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> John.task_ran_successfully("myTask")
+
+        """
+
+        if not isinstance(message, str):
+            raise TypeError("The `message` must be a str type object, received object of type {}".format(type(message)))
+
+        if reply_to_message_id is not None and not isinstance(reply_to_message_id, str):
+            raise TypeError(
+                "The `reply_to_message_id` must be a str type object or None, received object of type {}".format(type(reply_to_message_id))
+            )
+
+        if self._telegram_reporter is None:
+            raise RuntimeError("You can only send messages if the TelegramReporter is configured")
+
+        try:
+            self._telegram_response = self._telegram_reporter.send_message(message, reply_to_message_id)
+        except Exception as e:
+            warnings.warn("Could not connect to Telegram to send the message. Reason: {}".format(repr(e)), category=RuntimeWarning)
+
+        return self._telegram_response['result']['message_id']
+
+    def edit_message(self, message: str, message_id: str):
+        """Edit a message previously sent to telegram
+
+        Parameters
+        ----------
+        message
+            The message to be sent
+        message_id
+            The message ID of the message to edit
+
+        Raises
+        ------
+        TypeError
+            If any parameter has the incorrect type
+        RuntimeError
+            If the telegram reporter is not configured
+        Warning
+            If any irregularity, during communication with telegram, it is reinterpreted as a warning
+
+        Returns
+        -------
+        message_id: str
+            The telegram message id of the message which was just written
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001", telegram_bot_token="bot_token", telegram_chat_id="chat_id")
+        >>> John.create_run()
+        >>> message_id = John.send_message("This is an example message")
+        >>> John.edit_message("This is the edited text", message_id)
+
+        """
+
+        if not isinstance(message, str):
+            raise TypeError("The `message` must be a str type object, received object of type {}".format(type(message)))
+
+        if not isinstance(message_id, str):
+            raise TypeError("The `message_id` must be a str type object, received object of type {}".format(type(message_id)))
+
+        if self._telegram_reporter is None:
+            raise RuntimeError("You can only send messages if the TelegramReporter is configured")
+
+        try:
+            self._telegram_response = self._telegram_reporter.edit_message(message, message_id)
+        except Exception as e:
+            warnings.warn("Could not connect to Telegram to send the message. Reason: {}".format(repr(e)), category=RuntimeWarning)
+
+        return self._telegram_response['result']['message_id']
 
 
 class TaskManager(RunManager):
