@@ -67,7 +67,7 @@ def test_run_manager_create_run():
     assert httpRequest["timeout"] == 1
     assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
     assert httpRequest["data"]['chat_id'] == chat_id
-    # assert httpRequest["data"]['text'] == message  # Not testing the message so that we are free to change as needed
+    # assert httpRequest["data"]['text'] == message  # Not testing the message contents so that we are free to change as needed
 
     try:
         John.create_run(raise_error=True)
@@ -83,6 +83,13 @@ def test_run_manager_create_run():
         assert str(e) == (
             "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format("Run0001", tmpdir)
         )
+
+    del John
+    httpRequest = sessionHandler.json()
+    assert httpRequest["timeout"] == 1
+    assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+    assert httpRequest["data"]['chat_id'] == chat_id
+    assert httpRequest["data"]['text'] == "Finished processing Run Run0001"
 
     shutil.rmtree(runPath)
 
