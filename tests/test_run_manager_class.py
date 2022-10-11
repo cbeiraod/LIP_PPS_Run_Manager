@@ -90,7 +90,7 @@ def test_run_manager_create_run():
     assert httpRequest["timeout"] == 1
     assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
     assert httpRequest["data"]['chat_id'] == chat_id
-    assert httpRequest["data"]['text'] == "✅ Finished processing Run Run0001"
+    assert httpRequest["data"]['text'] == "✔️ Finished processing Run Run0001"
 
     shutil.rmtree(runPath)
 
