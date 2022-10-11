@@ -68,6 +68,7 @@ def test_run_manager_create_run():
     assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
     assert httpRequest["data"]['chat_id'] == chat_id
     # assert httpRequest["data"]['text'] == message  # Not testing the message contents so that we are free to change as needed
+    assert John._status_message_id == "This is the message ID"
 
     try:
         John.create_run(raise_error=True)
