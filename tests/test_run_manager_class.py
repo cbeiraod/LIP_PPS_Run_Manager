@@ -182,6 +182,89 @@ def test_fail_run_manager_handle_task():
     shutil.rmtree(runPath)
 
 
+def test_run_manager_send_message():
+    from test_telegram_reporter_class import SessionReplacement
+
+    sessionHandler = SessionReplacement()
+
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+
+    message_id = John.send_message("This is a test message")
+
+    assert message_id == "This is the message ID"
+    httpRequest = sessionHandler.json()
+    assert httpRequest["timeout"] == 1
+    assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+    assert httpRequest["data"]['chat_id'] == chat_id
+    # assert httpRequest["data"]['text'] == ""  # Not testing message content
+
+    reply_message_id = "reply_to_me"
+    message_id = John.send_message("This is a test message", reply_message_id)
+
+    assert message_id == "This is the message ID"
+    httpRequest = sessionHandler.json()
+    assert httpRequest["timeout"] == 1
+    assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+    assert httpRequest["data"]['chat_id'] == chat_id
+    assert httpRequest["data"]['reply_to_message_id'] == reply_message_id
+    # assert httpRequest["data"]['text'] == ""  # Not testing message content
+
+
+def test_fail_run_manager_send_message():
+    from test_telegram_reporter_class import SessionReplacement
+
+    sessionHandler = SessionReplacement(error_type="KeyboardInterrupt")
+    sessionHandler2 = SessionReplacement(error_type="Exception")
+
+    tmpdir = tempfile.gettempdir()
+    runPath = Path(tmpdir) / "Run0001"
+    ensure_clean(runPath)
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    John = RM.RunManager(runPath)
+
+    try:
+        John.send_message(2)
+    except TypeError as e:
+        assert str(e) == ("The `message` must be a str type object, received object of type <class 'int'>")
+
+    try:
+        John.send_message("Test message to send", 2)
+    except TypeError as e:
+        assert str(e) == ("The `reply_to_message_id` must be a str type object or None, received object of type <class 'int'>")
+
+    try:
+        John.send_message("Test message to send")
+    except RuntimeError as e:
+        assert str(e) == ("You can only send messages if the TelegramReporter is configured")
+
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+
+    John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+    try:
+        John.send_message("Test message to send")
+    except KeyboardInterrupt as e:
+        assert isinstance(e, KeyboardInterrupt)
+
+    John._telegram_reporter._session = sessionHandler2  # To avoid sending actual http requests
+    try:
+        John.send_message("Test message to send")
+    except RuntimeWarning as e:
+        assert (
+            str(e) == "Could not connect to Telegram to send the message. Reason: RuntimeWarning('Failed sending to "
+            "telegram. Reason: Exception()')"
+        )
+
+    sessionHandler = SessionReplacement()  # We change the session handler so the del event does not raise an error
+    John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+
+
 def test_run_manager_repr():
     from test_telegram_reporter_class import SessionReplacement
 
