@@ -181,6 +181,10 @@ def test_task_manager_with():
 
 
 def test_task_manager_repr():
+    from test_telegram_reporter_class import SessionReplacement
+
+    sessionHandler = SessionReplacement()
+
     with PrepareRunDir() as handler:
         runPath = handler.run_path
         bot_token = "bot_token"
@@ -194,6 +198,7 @@ def test_task_manager_repr():
         John = RM.TaskManager(
             runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_bot_token=bot_token, telegram_chat_id=chat_id
         )
+        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
         assert repr(
             John
         ) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, telegram_bot_token={}, telegram_chat_id={})".format(
