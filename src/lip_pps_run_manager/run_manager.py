@@ -194,6 +194,7 @@ class RunManager:
     _chat_id = None
     _telegram_reporter = None
     _run_created = False
+    _status_message_id = None
 
     def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None):
         if not isinstance(path_to_run_directory, Path):
@@ -254,6 +255,12 @@ class RunManager:
         """The name of the run property getter method"""
         return self._path_directory.parts[-1]
 
+    def __del__(self):
+        if self._telegram_reporter is not None:
+            if self._status_message_id is not None:
+                self.edit_message("🔰 Start of processing of Run {} 🔰".format(self.run_name), self._status_message_id)
+            self.send_message("✔️ Finished processing Run {}".format(self.run_name), self._status_message_id)
+
     def create_run(self, raise_error: bool = False):
         """Creates a run where this `RunManager` is pointing to.
 
@@ -268,6 +275,8 @@ class RunManager:
         RuntimeError
             If the `raise_error` parameter is `True` and the run already
             exists or if the run directory already exists.
+        Warning
+            If any irregularity, during communication with telegram, it is reinterpreted as a warning
 
         Examples
         --------
