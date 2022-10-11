@@ -14,15 +14,15 @@ class PrepareRunDir:
         self._run_path = Path(self._tmpdir) / runName
 
     @property
-    def run_path(self):
+    def run_path(self):  # pragma: no cover
         return self._run_path
 
     @property
-    def run_name(self):
+    def run_name(self):  # pragma: no cover
         return self._run_name
 
     @property
-    def run_dir(self):
+    def run_dir(self):  # pragma: no cover
         return self._tmpdir
 
     def __enter__(self):
