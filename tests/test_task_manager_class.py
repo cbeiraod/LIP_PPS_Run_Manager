@@ -145,7 +145,7 @@ def test_task_manager_with():
 
         try:
             with John as john:  # Test __enter__ not allowing to reuse a TaskManager
-                2  # pragma: no cover
+                pass  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == ("Once a task has processed its data, it can not be processed again. Use a new task")
 
