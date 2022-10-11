@@ -65,6 +65,14 @@ def test_task_manager():
             assert John.processed_iterations == 1
             john.set_completed()
             assert John.processed_iterations == 20
+            john.loop_tick()
+            assert John.processed_iterations == 21
+            assert hasattr(john, "_supposedly_just_sent_warnings")
+            assert (
+                "The number of processed iterations has exceeded the "
+                "set number of iterations.\n  - Expected 20 "
+                "iterations;\n  - Processed 21 iterations" in john._supposedly_just_sent_warnings
+            )
 
 
 def test_fail_task_manager():
