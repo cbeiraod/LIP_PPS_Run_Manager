@@ -49,13 +49,22 @@ def test_task_manager():
         assert John.task_path == runPath / "myTask"
         assert not (runPath / "myTask").is_dir()
         assert John.processed_iterations == 0
+
         try:
             John.loop_tick()
         except RuntimeError as e:
             assert str(e) == ("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+
+        try:
+            John.set_completed()
+        except RuntimeError as e:
+            assert str(e) == ("Tried calling set_completed() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+
         with John as john:
             john.loop_tick()
-        assert John.processed_iterations == 1
+            assert John.processed_iterations == 1
+            john.set_completed()
+            assert John.processed_iterations == 20
 
 
 def test_fail_task_manager():
