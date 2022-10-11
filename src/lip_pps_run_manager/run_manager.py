@@ -772,6 +772,23 @@ class TaskManager(RunManager):
 
         self._processed_iterations += count
 
+    def set_completed(self):
+        """Set the task as if it had completed
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> with John.handle_task("myTask") as taskHandler:
+        ...   # Do work
+        ...   taskHandler.set_completed()
+        """
+        if not self._in_task_context:
+            raise RuntimeError("Tried calling set_completed() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+
+        self._processed_iterations = self._loop_iterations
+
     def clean_task_directory(self):
         """Clean directory of task of all previous data
 
