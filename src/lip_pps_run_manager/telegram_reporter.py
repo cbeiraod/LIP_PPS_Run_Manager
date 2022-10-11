@@ -155,7 +155,7 @@ class TelegramReporter:
             The ID of the message to edit
 
         """
-        self._session.post(
+        response = self._session.post(
             "https://api.telegram.org/bot{}/editMessageText".format(self.bot_token),
             data={
                 "chat_id": self.chat_id,
@@ -164,6 +164,8 @@ class TelegramReporter:
             },
             timeout=1,
         )
+
+        return response.json()
 
     def edit_message(self, message_text: str, message_id: str):
         """Edit a message that was previously sent to the chat using the bot.
