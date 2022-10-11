@@ -44,6 +44,8 @@ class SessionReplacement:
             elif self._error_type == "Exception":  # pragma: no cover
                 raise Exception()
 
+        return self
+
     def json(self):
         return self
 
@@ -132,9 +134,9 @@ def test_telegram_reporter_edit_message():
 
     message = "Hello there"
     message_id = "message_id"
-    reporter.edit_message(message_text=message, message_id=message_id)
+    retVal = reporter.edit_message(message_text=message, message_id=message_id)
 
-    retVal = sessionHandler.json()
+    assert retVal == sessionHandler.json()
     assert retVal["timeout"] == 1
     assert retVal["url"] == "https://api.telegram.org/bot{}/editMessageText".format(bot_token)
     assert retVal["data"]["message_id"] == message_id
