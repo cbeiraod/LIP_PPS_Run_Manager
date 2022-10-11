@@ -523,6 +523,7 @@ class TaskManager(RunManager):
     _script_to_backup = Path("")
     _loop_iterations = None
     _processed_iterations = None
+    _in_task_context = False
 
     def __init__(
         self,
@@ -629,6 +630,9 @@ class TaskManager(RunManager):
         ...   # Do work
         ...   taskHandler.loop_tick()
         """
+        if not self._in_task_context:
+            RuntimeError("Tried calling loop_tick() while not inside a task loop. Use the 'with TaskManager as handle' syntax")
+
         self._processed_iterations += count
 
     def clean_task_directory(self):
@@ -668,11 +672,15 @@ class TaskManager(RunManager):
         frame = inspect.currentframe()
         self._locals_on_call = frame.f_back.f_locals
 
+        self._in_task_context = True
+
         return self
 
     def __exit__(self, err_type, err_value, err_traceback):
         """This is the method that is called at the end of the block, when using the "with" syntax"""
         self._already_processed = True
+
+        self._in_task_context = False
 
         with open(self.task_path / "task_report.txt", "w") as out_file:
             if all([err is None for err in [err_type, err_value, err_traceback]]):
