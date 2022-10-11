@@ -17,6 +17,14 @@ class PrepareRunDir:
     def run_path(self):
         return self._run_path
 
+    @property
+    def run_name(self):
+        return self._run_name
+
+    @property
+    def run_dir(self):
+        return self._tmpdir
+
     def __enter__(self):
         if self.run_path.exists():  # pragma: no cover
             shutil.rmtree(self.run_path)
@@ -113,6 +121,12 @@ def test_task_manager_clean_task_directory():
         assert not (John.task_path / "testFile.tmp").is_file()
         assert not (John.task_path / "testDir").is_dir()
         assert next(John.task_path.iterdir(), None) is None
+
+        try:
+            John2 = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+            John2.clean_task_directory()
+        except RuntimeError as e:
+            assert str(e) == ("Can not create run '{}', in '{}' because it already exists.".format(handler.run_name, handler.run_dir))
 
 
 def test_task_manager_with():
