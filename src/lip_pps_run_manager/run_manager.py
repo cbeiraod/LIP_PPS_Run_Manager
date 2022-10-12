@@ -745,7 +745,7 @@ class TaskManager(RunManager):
         return self.get_task_path(self.task_name)
 
     @property
-    def processed_iterations(self) -> Path:
+    def processed_iterations(self) -> int:
         """The processed iterations property getter method"""
         return self._processed_iterations
 
