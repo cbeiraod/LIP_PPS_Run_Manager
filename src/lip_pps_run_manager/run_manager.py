@@ -862,7 +862,7 @@ class TaskManager(RunManager):
                     out_file.write("# Please note that the same script may process multiple tasks, so it may show up multiple times.\n")
                     out_file.write("# The original location and name of the script was {}.\n".format(self._script_to_backup))
                     out_file.write("# The backup was created on {}.\n".format(datetime.datetime.now()))
-                    out_file.write("# A copy of all the local variables at the time the __enter__ method started:\n")
+                    out_file.write("# A copy of all the local variables at the time the __enter__ method of the task started:\n")
                     for key in self._locals_on_call:
                         out_file.write("#   {}: {}\n".format(key, repr(self._locals_on_call[key])))
                     out_file.write("# ------------------------------------------------------------------------------------------------\n")
