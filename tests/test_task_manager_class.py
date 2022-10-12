@@ -342,12 +342,19 @@ def test_task_manager_send_warnings():
 
 def test_task_manager_with():
     with PrepareRunDir() as handler:
+        from test_telegram_reporter_class import SessionReplacement
+
+        sessionHandler = SessionReplacement()
+
         runPath = handler.run_path
         John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
         John.create_run()
 
+        assert not hasattr(John, "_start_time")
+        assert John._task_status_message_id is None
         with John as john:
             (john.task_path / "task_file.txt").touch()
+            assert hasattr(John, "_start_time")
         assert (John.task_path / "task_report.txt").is_file()  # Test the __exit__ is correctly creating the report file
 
         with open(John.task_path / "task_report.txt") as report_file:
@@ -390,6 +397,64 @@ def test_task_manager_with():
                 John4._script_to_backup = runPath
         except RuntimeError as e:
             assert str(e) == "Somehow you are trying to backup a file that does not exist"
+
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        loops = 20
+
+        David = RM.TaskManager(
+            runPath,
+            "otherTaskWithReporting",
+            drop_old_data=True,
+            script_to_backup=None,
+            loop_iterations=None,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+        )
+        David._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+        David.create_run()
+
+        assert not hasattr(David, "_start_time")
+        assert David._task_status_message_id is None
+        with David as david:
+            (david.task_path / "task_file.txt").touch()
+            assert hasattr(david, "_start_time")
+            assert david._task_status_message_id is not None
+            httpRequest = sessionHandler.json()
+            assert httpRequest["timeout"] == 1
+            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+            assert httpRequest["data"]['chat_id'] == chat_id
+            sent_message = "Started processing task {} of run {}.\nAn update should come soon".format(david.task_name, handler.run_name)
+            assert httpRequest["data"]['text'] == sent_message
+        assert (David.task_path / "task_report.txt").is_file()  # Test the __exit__ is correctly creating the report file
+
+        David = RM.TaskManager(
+            runPath,
+            "otherTaskWithReporting",
+            drop_old_data=True,
+            script_to_backup=None,
+            loop_iterations=loops,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+        )
+        David._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+        David.create_run()
+
+        assert not hasattr(David, "_start_time")
+        assert David._task_status_message_id is None
+        with David as david:
+            (david.task_path / "task_file.txt").touch()
+            assert hasattr(david, "_start_time")
+            assert david._task_status_message_id is not None
+            httpRequest = sessionHandler.json()
+            assert httpRequest["timeout"] == 1
+            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+            assert httpRequest["data"]['chat_id'] == chat_id
+            sent_message = "Started processing task {} of run {}.\nIt has {} iterations.\nAn update should come soon".format(
+                david.task_name, handler.run_name, loops
+            )
+            assert httpRequest["data"]['text'] == sent_message
+        assert (David.task_path / "task_report.txt").is_file()  # Test the __exit__ is correctly creating the report file
 
 
 def test_task_manager_repr():
