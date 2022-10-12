@@ -12,6 +12,8 @@ import traceback
 import warnings
 from pathlib import Path
 
+import humanize
+
 from lip_pps_run_manager import __version__
 from lip_pps_run_manager.telegram_reporter import TelegramReporter
 
@@ -863,3 +865,38 @@ class TaskManager(RunManager):
                 # shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
             else:
                 raise RuntimeError("Somehow you are trying to backup a file that does not exist")
+
+    def _send_warnings(self):
+        """Actually send the warnings to telegram, multiple warnings are combined into one"""
+        if not hasattr(self, "_accumulated_warnings") or self._accumulated_warnings == {}:
+            return
+
+        if self._telegram_reporter is not None:
+            if not hasattr(self, "_task_status_message_id") or self._task_status_message_id is None:
+                return
+            if not hasattr(self, "_last_warn"):
+                self._last_warn = datetime.datetime.now() - 2 * self._minimum_warn_time
+            elapsed_time = datetime.datetime.now() - self._last_warn
+            if elapsed_time >= self._minimum_warn_time:
+                self._last_warn = datetime.datetime.now()
+                if len(self._accumulated_warnings) == 1:
+                    message_to_send = list(self._accumulated_warnings.keys())[0]
+                    if self._accumulated_warnings[message_to_send] > 1:
+                        message_to_send = (
+                            "Received the following warning {} times in the last {}:\n".format(
+                                self._accumulated_warnings[message_to_send], humanize.naturaldelta(self._minimum_warn_time)
+                            )
+                            + message_to_send
+                        )
+                else:
+                    message_to_send = "Several warnings received in the last {}\n".format(humanize.naturaldelta(self._minimum_warn_time))
+                    for msg, count in self._accumulated_warnings.items():
+                        message_to_send += "\n----------------------------------\n"
+                        if count > 1:
+                            message_to_send += "Received the following warning {} times:\n".format(count)
+                        message_to_send += msg
+                self.send_message(message_to_send, self._task_status_message_id)
+                self._accumulated_warnings = {}
+        else:
+            self._supposedly_just_sent_warnings = self._accumulated_warnings  # Do this just because of the testing
+            self._accumulated_warnings = {}
