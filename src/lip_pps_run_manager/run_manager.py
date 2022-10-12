@@ -764,10 +764,19 @@ class TaskManager(RunManager):
         return None
 
     def loop_tick(self, count: int = 1):
-        """Increase the internal loop count
+        """Increase the internal loop count, it is assumed this method is called at the end of the loop
 
         When skipping multiple iterations, you can use the count
         parameter to increase the counter for multiple iterations.
+        This method is also used internally to do some bookeeping
+        operations such as keeping the status message on telegram up to
+        date and sending warnings if there have been any. For this
+        reason, it is good to call this method with some frequency. If
+        the task loop is so long that the frequency of updates is
+        deemed too slow, consider calling this method with `count=0` or
+        by calling explicitly the `_update_status` method, but keep in
+        mind that `_update_status` keeps an eye on when the status was
+        last updated, so if it is too soon, no update will be made.
 
         Parameters
         ----------
@@ -800,6 +809,48 @@ class TaskManager(RunManager):
                 "set number of iterations.\n  - Expected {} iterations;"
                 "\n  - Processed {} iterations".format(self._loop_iterations, self._processed_iterations)
             )
+
+        self._update_status()
+        self._send_warnings()
+
+    def _update_status(self):
+        """Internal method to update the status of the task on the telegram status message"""
+        if not self._in_task_context:
+            raise RuntimeError(
+                "Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax"
+            )
+
+        if self._telegram_reporter is not None:
+            create_status = False
+            if not hasattr(self, "_task_status_message_id") or self._task_status_message_id is None:
+                create_status = True
+            if not hasattr(self, '_last_update'):
+                self._last_update = datetime.datetime.now() - 2 * self._minimum_update_time
+            elapsed_time = datetime.datetime.now() - self._last_update
+            if create_status or elapsed_time >= self._minimum_update_time:
+                self._last_update = datetime.datetime.now()
+                new_status = "▶️▶️ Processing task {} of run {} 🍀\n".format(
+                    self.task_name, self.run_name
+                )  # Four leaf clover is to wish good luck on the completion of the task
+                new_status += "     Started {}\n".format(self._start_time.strftime("%Y-%m-%d %H:%M"))
+                if self.expected_finish_time is not None:
+                    new_status += "     Expected finish: {}\n".format(self.expected_finish_time.strftime("%Y-%m-%d %H:%M"))
+                    new_status += "     Remaining time: {}\n\n".format(
+                        humanize.naturaltime(datetime.datetime.now() - self.expected_finish_time)
+                    )
+                    new_status += "     Progress: {} % ({}/{})\n\n\n".format(
+                        int((self.processed_iterations + 1) / self._loop_iterations), self.processed_iterations + 1, self._loop_iterations
+                    )
+                else:
+                    new_status += "     Unknown expected finish time and remaining time\n\n"
+                    if self.processed_iterations is not None:
+                        new_status += "     Progress: {} out of an unknown number of iterations\n\n\n".format(self.processed_iterations + 1)
+                new_status += "Last update of this message: {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+
+                if create_status:
+                    self._task_status_message_id = self.send_message(new_status, self._status_message_id)
+                else:
+                    self.edit_message(new_status, self._task_status_message_id)
 
     def set_completed(self):
         """Set the task as if it had completed
@@ -850,6 +901,21 @@ class TaskManager(RunManager):
         self._locals_on_call = frame.f_back.f_locals
 
         self._in_task_context = True
+
+        self._start_time = datetime.datetime.now()
+        if self._telegram_reporter is not None:
+            if self._loop_iterations is None:
+                self._task_status_message_id = self.send_message(
+                    "Started processing task {} of run {}.\nAn update should come soon".format(self.task_name, self.run_name),
+                    self._status_message_id,
+                )
+            else:
+                self._task_status_message_id = self.send_message(
+                    "Started processing task {} of run {}.\nIt has {} iterations.\nAn update should come soon".format(
+                        self.task_name, self.run_name, self._loop_iterations
+                    ),
+                    self._status_message_id,
+                )
 
         return self
 
