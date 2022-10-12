@@ -773,6 +773,9 @@ class TaskManager(RunManager):
         if not self._in_task_context:
             raise RuntimeError("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
+        if not hasattr(self, '_last_update'):
+            self._last_update = datetime.datetime.now() - 2 * self._minimum_update_time
+
         self._processed_iterations += count
         if self.processed_iterations > self._loop_iterations:
             self.warn(
