@@ -952,7 +952,7 @@ class TaskManager(RunManager):
                     for key in self._locals_on_call:
                         out_file.write("#   {}: {}\n".format(key, repr(self._locals_on_call[key])))
                     out_file.write("# ------------------------------------------------------------------------------------------------\n")
-                    with open(self._script_to_backup, "r") as in_file:
+                    with open(self._script_to_backup, "r", encoding="utf8") as in_file:
                         for line in in_file:
                             out_file.write(line)
                 # shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
