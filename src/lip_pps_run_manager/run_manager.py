@@ -883,12 +883,7 @@ class TaskManager(RunManager):
         ------
         TypeError
             If the parameter has the incorrect type
-        RuntimeError
-            If called outside the task context
         """
-        if not self._in_task_context:
-            raise RuntimeError("Tried calling warn() while not inside a task context. Use the 'with TaskManager as handle' syntax")
-
         if not isinstance(message, str):
             raise TypeError("The `message` must be a str type object, received object of type {}".format(type(message)))
 
