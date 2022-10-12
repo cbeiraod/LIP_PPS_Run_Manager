@@ -749,6 +749,20 @@ class TaskManager(RunManager):
         """The processed iterations property getter method"""
         return self._processed_iterations
 
+    @property
+    def expected_finish_time(self):
+        """The time at which the task is expected to be finished"""
+        if (
+            hasattr(self, "_start_time")
+            and self.processed_iterations is not None
+            and self.processed_iterations != 0
+            and self._loop_iterations is not None
+            and self._loop_iterations != 0
+        ):
+            elapsed_time = datetime.datetime.now() - self._start_time
+            return self._start_time + elapsed_time / self.processed_iterations * self._loop_iterations
+        return None
+
     def loop_tick(self, count: int = 1):
         """Increase the internal loop count
 
@@ -775,6 +789,9 @@ class TaskManager(RunManager):
 
         if not hasattr(self, '_last_update'):
             self._last_update = datetime.datetime.now() - 2 * self._minimum_update_time
+
+        if self._processed_iterations is None:
+            self._processed_iterations = 0
 
         self._processed_iterations += count
         if self.processed_iterations > self._loop_iterations:
