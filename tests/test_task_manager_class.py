@@ -522,3 +522,89 @@ def test_task_manager_expected_finish_time():
         John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
         assert John.expected_finish_time is not None
         assert John.expected_finish_time > datetime.datetime.now()
+
+
+def test_task_manager_update_status():
+    with PrepareRunDir() as handler:
+        runPath = handler.run_path
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+
+        try:
+            John._update_status()
+        except RuntimeError as e:
+            assert str(e) == "Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax"
+
+    with PrepareRunDir() as handler:
+        from test_telegram_reporter_class import SessionReplacement
+
+        sessionHandler = SessionReplacement()
+
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        update_time = 1
+
+        runPath = handler.run_path
+        John = RM.TaskManager(
+            runPath,
+            "myTask",
+            drop_old_data=True,
+            script_to_backup=None,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            minimum_update_time_seconds=update_time,
+        )
+        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+
+        assert not hasattr(John, "_last_update")
+        assert John._telegram_reporter is not None
+        assert John._task_status_message_id is None
+
+        try:
+            John._update_status()
+        except RuntimeError as e:
+            assert str(e) == "Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax"
+
+        with John as john:
+            assert john._telegram_reporter is not None
+            assert john._task_status_message_id is not None
+
+            john._update_status()
+            assert hasattr(john, "_last_update")
+            httpRequest = sessionHandler.json()
+            assert "▶️▶️ Processing task" in httpRequest["data"]['text']
+            assert "Unknown expected" in httpRequest["data"]['text']
+            assert "Progress:" not in httpRequest["data"]['text']
+            assert "Last update of this message" in httpRequest["data"]['text']
+
+            last_update = copy.deepcopy(john._last_update)
+            john._update_status()
+            assert john._last_update == last_update
+
+            john._task_status_message_id = None
+            john._processed_iterations = 2
+            john._update_status()
+            assert hasattr(john, "_last_update")
+            assert john._task_status_message_id is not None
+            httpRequest = sessionHandler.json()
+            assert "▶️▶️ Processing task" in httpRequest["data"]['text']
+            assert "Unknown expected" in httpRequest["data"]['text']
+            assert "Progress:" in httpRequest["data"]['text']
+            assert "Last update of this message" in httpRequest["data"]['text']
+
+            john._task_status_message_id = None
+            john._loop_iterations = 20
+            john._processed_iterations = 2
+            john._update_status()
+            assert hasattr(john, "_last_update")
+            assert john._task_status_message_id is not None
+            httpRequest = sessionHandler.json()
+            assert "▶️▶️ Processing task" in httpRequest["data"]['text']
+            assert "Expected finish:" in httpRequest["data"]['text']
+            assert "(3/20)" in httpRequest["data"]['text']
+            assert "Last update of this message" in httpRequest["data"]['text']
+
+            # Just to get full coverage even though we are not really testing anything here apart from the lack of a crash
+            tmp = john._telegram_reporter
+            john._telegram_reporter = None
+            john._update_status()
+            john._telegram_reporter = tmp
