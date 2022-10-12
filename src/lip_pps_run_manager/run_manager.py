@@ -390,6 +390,7 @@ class RunManager:
             TM._bot_token = self._bot_token
             TM._chat_id = self._chat_id
             TM._telegram_reporter = self._telegram_reporter
+            TM._status_message_id = self._status_message_id
 
         return TM
 
