@@ -48,14 +48,10 @@ def test_fail_run_manager():
         assert str(e) == ("The `telegram_chat_id` must be a str type object, received object of type <class 'int'>")
 
 
-def test_run_manager_create_run():
-    from test_telegram_reporter_class import SessionReplacement
+def internal_function_for_run_manager_create_run(bot_token, chat_id, sessionHandler):
 
     tmpdir = tempfile.gettempdir()
     runPath = Path(tmpdir) / "Run0001"
-    bot_token = "bot_token"
-    chat_id = "chat_id"
-    sessionHandler = SessionReplacement()
     ensure_clean(runPath)
     John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
     John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
@@ -87,15 +83,23 @@ def test_run_manager_create_run():
 
     sessionHandler.clear()
 
-    # del John
-    John = None
+    shutil.rmtree(runPath)
+
+
+def test_run_manager_create_run():
+    from test_telegram_reporter_class import SessionReplacement
+
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    sessionHandler = SessionReplacement()
+
+    internal_function_for_run_manager_create_run(bot_token, chat_id, sessionHandler)
+
     httpRequest = sessionHandler.json()
     assert httpRequest["timeout"] == 1
     assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
     assert httpRequest["data"]['chat_id'] == chat_id
     assert httpRequest["data"]['text'] == "✔️ Finished processing Run Run0001"
-
-    shutil.rmtree(runPath)
 
 
 def test_run_manager_get_task_path():
