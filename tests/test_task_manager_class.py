@@ -1,7 +1,11 @@
+import copy
 import shutil
 import tempfile
+import time
 import traceback
 from pathlib import Path
+
+import humanize
 
 import lip_pps_run_manager as RM
 
@@ -158,6 +162,120 @@ def test_task_manager_clean_task_directory():
         assert not (John.task_path / "testFile.tmp").is_file()
         assert not (John.task_path / "testDir").is_dir()
         assert next(John.task_path.iterdir(), None) is None
+
+
+def test_task_manager_send_warnings():
+    with PrepareRunDir() as handler:
+        runPath = handler.run_path
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+
+        John._send_warnings()
+        assert not hasattr(John, "_accumulated_warnings")
+
+        tmpVar = {}
+        John._accumulated_warnings = copy.deepcopy(tmpVar)
+        John._send_warnings()
+        assert not hasattr(John, "_supposedly_just_sent_warnings")
+        assert John._accumulated_warnings == tmpVar
+
+        tmpVar = {"message1": 1, "message2": 2}
+        John._accumulated_warnings = copy.deepcopy(tmpVar)
+        John._send_warnings()
+        assert hasattr(John, "_supposedly_just_sent_warnings")
+        assert John._supposedly_just_sent_warnings == tmpVar
+
+    with PrepareRunDir() as handler:
+        from test_telegram_reporter_class import SessionReplacement
+
+        sessionHandler = SessionReplacement()
+
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        warn_time = 1
+
+        runPath = handler.run_path
+        John = RM.TaskManager(
+            runPath,
+            "myTask",
+            drop_old_data=True,
+            script_to_backup=None,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            minimum_warn_time_seconds=warn_time,
+        )
+        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+
+        assert not hasattr(John, "_last_warn")
+
+        tmpVar = {"test": 2}
+        John._accumulated_warnings = copy.deepcopy(tmpVar)
+        assert John._telegram_reporter is not None
+        assert John._task_status_message_id is None
+        John._send_warnings()
+        assert not hasattr(John, "_last_warn")
+
+        message1 = "message1"
+        message2 = "message2"
+        times = 10
+
+        with John as john:
+            assert John._telegram_reporter is not None
+            assert John._task_status_message_id is not None
+
+            # Test Single warning message, sent a single time
+            tmpVar = {message1: 1}
+            john._accumulated_warnings = copy.deepcopy(tmpVar)
+            john._send_warnings()
+            assert hasattr(john, "_last_warn")
+            assert not hasattr(john, "_supposedly_just_sent_warnings")
+            assert john._accumulated_warnings == {}
+            httpRequest = sessionHandler.json()
+            assert httpRequest["timeout"] == 1
+            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+            assert httpRequest["data"]['chat_id'] == chat_id
+            assert httpRequest["data"]['text'] == message1
+
+            tmpVar = {message1: times}
+            john._accumulated_warnings = copy.deepcopy(tmpVar)
+            john._send_warnings()
+            assert john._accumulated_warnings == tmpVar
+
+            time.sleep(warn_time + 0.1)
+
+            # Test Single warning message, sent more than one time
+            tmpVar = {message1: times}
+            john._accumulated_warnings = copy.deepcopy(tmpVar)
+            john._send_warnings()
+            assert not hasattr(john, "_supposedly_just_sent_warnings")
+            assert john._accumulated_warnings == {}
+            httpRequest = sessionHandler.json()
+            assert httpRequest["timeout"] == 1
+            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+            assert httpRequest["data"]['chat_id'] == chat_id
+            assert (
+                httpRequest["data"]['text']
+                == "Received the following warning {} times in the last {}:\n".format(times, humanize.naturaldelta(warn_time)) + message1
+            )
+
+            time.sleep(warn_time + 0.1)
+
+            # Test multiple warning messages
+            tmpVar = {message1: times, message2: 1}
+            john._accumulated_warnings = copy.deepcopy(tmpVar)
+            john._send_warnings()
+            assert not hasattr(john, "_supposedly_just_sent_warnings")
+            assert john._accumulated_warnings == {}
+            httpRequest = sessionHandler.json()
+            assert httpRequest["timeout"] == 1
+            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+            assert httpRequest["data"]['chat_id'] == chat_id
+            message_sent = "Several warnings received in the last {}\n".format(humanize.naturaldelta(warn_time))
+            for msg, count in tmpVar.items():
+                message_sent += "\n----------------------------------\n"
+                if count > 1:
+                    message_sent += "Received the following warning {} times:\n".format(count)
+                message_sent += msg
+            assert httpRequest["data"]['text'] == message_sent
 
 
 def test_task_manager_with():
