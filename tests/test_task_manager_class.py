@@ -1,4 +1,5 @@
 import copy
+import datetime
 import shutil
 import tempfile
 import time
@@ -483,3 +484,41 @@ def test_task_manager_repr():
         ) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, telegram_bot_token={}, telegram_chat_id={})".format(
             repr(runPath), repr("myTask"), repr(True), repr(None), repr(bot_token), repr(chat_id)
         )
+
+
+def test_task_manager_expected_finish_time():
+    with PrepareRunDir() as handler:
+        runPath = handler.run_path
+
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        assert John.expected_finish_time is None
+
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John._loop_iterations = 20
+        John._processed_iterations = 3
+        assert John.expected_finish_time is None
+
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John._loop_iterations = 20
+        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
+        assert John.expected_finish_time is None
+
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John._processed_iterations = 3
+        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
+        assert John.expected_finish_time is None
+
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John._loop_iterations = 20
+        John._processed_iterations = 3
+        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
+        assert John.expected_finish_time is not None
+        assert John.expected_finish_time > datetime.datetime.now()
+
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+        John._loop_iterations = 20
+        with John as john:
+            john.loop_tick()
+        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
+        assert John.expected_finish_time is not None
+        assert John.expected_finish_time > datetime.datetime.now()
