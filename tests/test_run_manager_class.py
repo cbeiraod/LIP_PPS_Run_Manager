@@ -87,7 +87,8 @@ def test_run_manager_create_run():
 
     sessionHandler.clear()
 
-    del John
+    # del John
+    John = None
     httpRequest = sessionHandler.json()
     assert httpRequest["timeout"] == 1
     assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
