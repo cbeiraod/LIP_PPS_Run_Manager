@@ -65,7 +65,9 @@ def test_task_manager():
             assert str(e) == ("Tried calling set_completed() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
         with John as john:
+            assert not hasattr(john, '_last_update')
             john.loop_tick()
+            assert hasattr(john, '_last_update')
             assert John.processed_iterations == 1
             john.set_completed()
             assert John.processed_iterations == 20
