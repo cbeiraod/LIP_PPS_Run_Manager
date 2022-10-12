@@ -867,6 +867,41 @@ class TaskManager(RunManager):
             else:
                 raise RuntimeError("Somehow you are trying to backup a file that does not exist")
 
+    def warn(self, message: str):
+        """Send a warning to telegram
+
+        Send the warning as a reply to the original status message. If
+        the warnings are sent with less than `minimum_warn_time_seconds`
+        parameter, the messages are stored and sent later.
+
+        Parameters
+        ----------
+        message
+            The warning message to be sent
+
+        Raises
+        ------
+        TypeError
+            If the parameter has the incorrect type
+        RuntimeError
+            If called outside the task context
+        """
+        if not self._in_task_context:
+            raise RuntimeError("Tried calling warn() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+
+        if not isinstance(message, str):
+            raise TypeError("The `message` must be a str type object, received object of type {}".format(type(message)))
+
+        if not hasattr(self, "_accumulated_warnings"):
+            self._accumulated_warnings = {}
+
+        if message not in self._accumulated_warnings:
+            self._accumulated_warnings[message] = 1
+        else:
+            self._accumulated_warnings[message] += 1
+
+        self._send_warnings()
+
     def _send_warnings(self):
         """Actually send the warnings to telegram, multiple warnings are combined into one"""
         if not hasattr(self, "_accumulated_warnings") or self._accumulated_warnings == {}:
