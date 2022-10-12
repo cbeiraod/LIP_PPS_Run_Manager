@@ -171,16 +171,13 @@ def test_task_manager_warn():
 
         warn_message = "Hello! This is a warning"
 
-        try:
-            assert not hasattr(John, "_accumulated_warnings")
-            John.warn(warn_message)
-            assert hasattr(John, "_accumulated_warnings")
-            assert John._accumulated_warnings == {}
-            assert hasattr(John, "_supposedly_just_sent_warnings")
-            assert warn_message in John._supposedly_just_sent_warnings
-            assert John._supposedly_just_sent_warnings[warn_message] == 1
-        except RuntimeError:
-            assert "RuntimeError because reasons" == ""
+        assert not hasattr(John, "_accumulated_warnings")
+        John.warn(warn_message)
+        assert hasattr(John, "_accumulated_warnings")
+        assert John._accumulated_warnings == {}
+        assert hasattr(John, "_supposedly_just_sent_warnings")
+        assert warn_message in John._supposedly_just_sent_warnings
+        assert John._supposedly_just_sent_warnings[warn_message] == 1
 
     with PrepareRunDir() as handler:
         from test_telegram_reporter_class import SessionReplacement
@@ -205,14 +202,11 @@ def test_task_manager_warn():
 
         warn_message = "Hello! This is a warning"
 
-        try:
-            assert not hasattr(John, "_accumulated_warnings")
-            John.warn(warn_message)
-            assert hasattr(John, "_accumulated_warnings")
-            assert warn_message in John._accumulated_warnings
-            assert John._accumulated_warnings[warn_message] == 1
-        except RuntimeError:
-            assert "RuntimeError because reasons" == ""
+        assert not hasattr(John, "_accumulated_warnings")
+        John.warn(warn_message)
+        assert hasattr(John, "_accumulated_warnings")
+        assert warn_message in John._accumulated_warnings
+        assert John._accumulated_warnings[warn_message] == 1
 
         with John as john:
             assert not hasattr(john, "_last_warn")
