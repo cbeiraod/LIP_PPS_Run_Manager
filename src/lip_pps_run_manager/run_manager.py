@@ -774,6 +774,12 @@ class TaskManager(RunManager):
             raise RuntimeError("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
         self._processed_iterations += count
+        if self.processed_iterations > self._loop_iterations:
+            self.warn(
+                "The number of processed iterations has exceeded the "
+                "set number of iterations.\n  - Expected {} iterations;"
+                "\n  - Processed {} iterations".format(self._loop_iterations, self._processed_iterations)
+            )
 
     def set_completed(self):
         """Set the task as if it had completed
