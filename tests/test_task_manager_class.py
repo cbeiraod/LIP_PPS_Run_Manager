@@ -164,6 +164,74 @@ def test_task_manager_clean_task_directory():
         assert next(John.task_path.iterdir(), None) is None
 
 
+def test_task_manager_warn():
+    with PrepareRunDir() as handler:
+        runPath = handler.run_path
+        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
+
+        warn_message = "Hello! This is a warning"
+
+        try:
+            assert not hasattr(John, "_accumulated_warnings")
+            John.warn(warn_message)
+            assert hasattr(John, "_accumulated_warnings")
+            assert John._accumulated_warnings == {}
+            assert hasattr(John, "_supposedly_just_sent_warnings")
+            assert warn_message in John._supposedly_just_sent_warnings
+            assert John._supposedly_just_sent_warnings[warn_message] == 1
+        except RuntimeError:
+            assert "RuntimeError because reasons" == ""
+
+    with PrepareRunDir() as handler:
+        from test_telegram_reporter_class import SessionReplacement
+
+        sessionHandler = SessionReplacement()
+
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        warn_time = 3600  # 1 hour wait, like this we can test that the messages are correctly accumulated
+
+        runPath = handler.run_path
+        John = RM.TaskManager(
+            runPath,
+            "myTask",
+            drop_old_data=True,
+            script_to_backup=None,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            minimum_warn_time_seconds=warn_time,
+        )
+        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+
+        warn_message = "Hello! This is a warning"
+
+        try:
+            assert not hasattr(John, "_accumulated_warnings")
+            John.warn(warn_message)
+            assert hasattr(John, "_accumulated_warnings")
+            assert warn_message in John._accumulated_warnings
+            assert John._accumulated_warnings[warn_message] == 1
+        except RuntimeError:
+            assert "RuntimeError because reasons" == ""
+
+        with John as john:
+            assert not hasattr(john, "_last_warn")
+            john.warn(warn_message)
+            assert hasattr(john, "_last_warn")
+            assert john._accumulated_warnings == {}
+            httpRequest = sessionHandler.json()
+            assert httpRequest["timeout"] == 1
+            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+            assert httpRequest["data"]['chat_id'] == chat_id
+            sent_message = "Received the following warning {} times in the last {}:\n".format(2, humanize.naturaldelta(3600)) + warn_message
+            assert httpRequest["data"]['text'] == sent_message
+
+            try:
+                john.warn(2)
+            except TypeError as e:
+                assert str(e) == "The `message` must be a str type object, received object of type <class 'int'>"
+
+
 def test_task_manager_send_warnings():
     with PrepareRunDir() as handler:
         runPath = handler.run_path
