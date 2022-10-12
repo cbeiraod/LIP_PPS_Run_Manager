@@ -942,7 +942,7 @@ class TaskManager(RunManager):
         if self._script_to_backup is not None:
             if self._script_to_backup.is_file():
                 outPath = self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1]))
-                with open(outPath, "w") as out_file:
+                with open(outPath, "w", encoding="utf8") as out_file:
                     out_file.write("# ------------------------------------------------------------------------------------------------\n")
                     out_file.write("# This is an automatic backup of the script that processed this task, made at the end of the task.\n")
                     out_file.write("# Please note that the same script may process multiple tasks, so it may show up multiple times.\n")
