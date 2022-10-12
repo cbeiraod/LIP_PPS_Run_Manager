@@ -85,6 +85,8 @@ def test_run_manager_create_run():
             "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format("Run0001", tmpdir)
         )
 
+    sessionHandler.clear()
+
     del John
     httpRequest = sessionHandler.json()
     assert httpRequest["timeout"] == 1

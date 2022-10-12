@@ -16,6 +16,9 @@ class SessionReplacement:
             return self._params[key]
         raise RuntimeError("Unknown key: {}".format(key))  # pragma: no cover
 
+    def clear(self):
+        self._params = {}
+
     def get(self, url: str, data=None, timeout=None):
         self._params = {}
 
