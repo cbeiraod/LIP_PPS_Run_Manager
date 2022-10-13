@@ -59,7 +59,7 @@ before_install:
       export PATH="/usr/local/opt/python/libexec/bin:${PATH}"
     fi
 install:
-  - python -mpip install --progress-bar=off tox -rci/requirements.txt
+  - python -mpip install --progress-bar=off tox -rci/requirements_travis.txt
   - virtualenv --version
   - pip --version
   - tox --version
