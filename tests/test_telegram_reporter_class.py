@@ -5,6 +5,7 @@ import lip_pps_run_manager as RM
 
 class SessionReplacement:
     _params = {}
+    _prev_params = {}
     _error_type = None
 
     def __init__(self):
@@ -13,6 +14,8 @@ class SessionReplacement:
     def __getitem__(self, key: str):
         if key == 'result':
             return {'message_id': "This is the message ID"}
+        if key == 'previous message':
+            return self._prev_params
         if key in self._params:
             return self._params[key]
         raise RuntimeError("Unknown key: {}".format(key))  # pragma: no cover
@@ -22,8 +25,11 @@ class SessionReplacement:
 
     def _clear(self):
         self._params = {}
+        self._prev_params = {}
 
     def get(self, url: str, data=None, timeout=None):
+        if self._params != {}:
+            self._prev_params = self._params
         self._params = {}
 
         self._params["url"] = url
@@ -39,6 +45,8 @@ class SessionReplacement:
         return self
 
     def post(self, url: str, data=None, timeout=None):
+        if self._params != {}:
+            self._prev_params = self._params
         self._params = {}
 
         self._params["url"] = url
