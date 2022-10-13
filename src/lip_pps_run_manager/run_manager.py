@@ -222,7 +222,7 @@ class RunManager:
 
     def __repr__(self):
         """Get the python representation of this class"""
-        if self._telegram_reporter is None:
+        if self._bot_token is None or self._chat_id is None:
             return "RunManager({})".format(repr(self.path_directory))
         else:
             return "RunManager({}, telegram_bot_token={}, telegram_chat_id={})".format(
