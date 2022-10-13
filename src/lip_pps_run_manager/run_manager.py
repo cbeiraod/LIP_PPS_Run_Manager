@@ -1047,9 +1047,13 @@ class TaskManager(RunManager):
 
         self._in_task_context = False
 
-        with open(self.task_path / "task_report.txt", "w") as out_file:
+        with open(self.task_path / "task_report.txt", "w", encoding="utf8") as out_file:
             if all([err is None for err in [err_type, err_value, err_traceback]]):
-                out_file.write("task_status: no errors\n")
+                status_message = "no errors"
+                if self._loop_iterations is not None and self._loop_iterations > 0:
+                    if self._processed_iterations != self._loop_iterations:
+                        status_message = "incomplete"
+                out_file.write("task_status: {}\n".format(status_message))
                 out_file.write("Task completed successfully with no errors\n")
                 out_file.write("The task finished running on: {}.\n".format(datetime.datetime.now()))
             else:
