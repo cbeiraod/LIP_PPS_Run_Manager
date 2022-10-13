@@ -818,23 +818,37 @@ class TaskManager(RunManager):
         if loop_iterations is not None:
             self._processed_iterations = 0
 
-    def __del__(self):  # We do this so that the base class destructor is not called by default
-        pass
-
     def __repr__(self):
         """Get the python representation of this class"""
-        if self._telegram_reporter is None:
-            return "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
-                repr(self.path_directory), repr(self.task_name), repr(self._drop_old_data), repr(self._script_to_backup)
+        if self._bot_token is None or self._chat_id is None:
+            return (
+                "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, "
+                "loop_iterations={}, minimum_update_time_seconds={}, "
+                "minimum_warn_time_seconds={})".format(
+                    repr(self.path_directory),
+                    repr(self.task_name),
+                    repr(self._drop_old_data),
+                    repr(self._script_to_backup),
+                    repr(self._loop_iterations),
+                    repr(self._minimum_update_time),
+                    repr(self._minimum_warn_time),
+                )
             )
         else:
-            return "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, telegram_bot_token={}, telegram_chat_id={})".format(
-                repr(self.path_directory),
-                repr(self.task_name),
-                repr(self._drop_old_data),
-                repr(self._script_to_backup),
-                repr(self._bot_token),
-                repr(self._chat_id),
+            return (
+                "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, "
+                "telegram_bot_token={}, telegram_chat_id={}, loop_iterations={}, "
+                "minimum_update_time_seconds={}, minimum_warn_time_seconds={})".format(
+                    repr(self.path_directory),
+                    repr(self.task_name),
+                    repr(self._drop_old_data),
+                    repr(self._script_to_backup),
+                    repr(self._bot_token),
+                    repr(self._chat_id),
+                    repr(self._loop_iterations),
+                    repr(self._minimum_update_time),
+                    repr(self._minimum_warn_time),
+                )
             )
 
     @property
