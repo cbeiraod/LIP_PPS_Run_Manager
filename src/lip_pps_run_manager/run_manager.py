@@ -198,6 +198,7 @@ class RunManager:
     _telegram_reporter = None
     _run_created = False
     _status_message_id = None
+    _in_run_context = False
 
     def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None):
         if not isinstance(path_to_run_directory, Path):
@@ -218,7 +219,6 @@ class RunManager:
         if telegram_bot_token is not None and telegram_chat_id is not None:
             self._bot_token = telegram_bot_token
             self._chat_id = telegram_chat_id
-            self._telegram_reporter = TelegramReporter(telegram_bot_token, telegram_chat_id)
 
     def __repr__(self):
         """Get the python representation of this class"""
@@ -258,11 +258,27 @@ class RunManager:
         """The name of the run property getter method"""
         return self._path_directory.parts[-1]
 
-    def __del__(self):
+    def __enter__(self):
+        """This is the method that is called when using the "with" syntax"""
+        self._in_run_context = True
+
+        if self._bot_token is not None and self._chat_id is not None:
+            self._telegram_reporter = TelegramReporter(self._bot_token, self._chat_id)
+            self._status_message_id = self.send_message("⏰ Preparing for Run {}".format(self.run_name))
+
+        return self
+
+    def __exit__(self, err_type, err_value, err_traceback):
+        """This is the method that is called at the end of the block, when using the "with" syntax"""
         if self._telegram_reporter is not None:
             if self._status_message_id is not None:
-                self.edit_message("🔰 Start of processing of Run {} 🔰".format(self.run_name), self._status_message_id)
-            self.send_message("✔️ Finished processing Run {}".format(self.run_name), self._status_message_id)
+                self.edit_message("🔰🔰 Start of processing of Run {} 🔰🔰".format(self.run_name), self._status_message_id)
+            if all([err is None for err in [err_type, err_value, err_traceback]]):
+                self.send_message("✔️✔️ Successfully Finished processing Run {} ✔️✔️".format(self.run_name), self._status_message_id)
+            else:
+                self.send_message("🚫🚫 Finished processing Run {} with errors 🚫🚫".format(self.run_name), self._status_message_id)
+
+        self._in_run_context = False
 
     def create_run(self, raise_error: bool = False):
         """Creates a run where this `RunManager` is pointing to.
@@ -284,13 +300,16 @@ class RunManager:
         Examples
         --------
         >>> import lip_pps_run_manager as RM
-        >>> John = RM.RunManager("Run0001")
-        >>> John.create_run(True)
+        >>> with RM.RunManager("Run0001") as John
+        ...   John.create_run(True)
 
         The above code should create the Run0001 directory if it doesn't
         exist or exit with a `RuntimeError` if it does.
 
         """
+        if not self._in_run_context:
+            raise RuntimeError("Tried calling create_run() while not inside a run context. Use the 'with RunManager as handle' syntax")
+
         if run_exists(self.path_directory.parent, self.run_name):
             if raise_error:
                 raise RuntimeError(
@@ -361,14 +380,16 @@ class RunManager:
         Examples
         --------
         >>> import lip_pps_run_manager as RM
-        >>> John = RM.RunManager("Run0001")
-        >>> John.create_run()
-        >>> with John.handle_task("myTask") as taskHandler:
-        ...   print("Processing task")
+        >>> with RM.RunManager("Run0001") as John:
+        ...   John.create_run()
+        ...   with John.handle_task("myTask") as taskHandler:
+        ...     print("Processing task")
 
         The above code should create the Run0001 directory and then
         create a subdirectory for the task "myTask".
         """
+        if not self._in_run_context:
+            raise RuntimeError("Tried calling handle_task() while not inside a run context. Use the 'with RunManager as handle' syntax")
 
         if not isinstance(task_name, str):
             raise TypeError("The `task_name` must be a str type object, received object of type {}".format(type(task_name)))
@@ -419,6 +440,7 @@ class RunManager:
             minimum_warn_time_seconds=minimum_warn_time_seconds,
         )
         TM._run_created = self._run_created
+        TM._in_run_context = self._in_run_context
         if self._telegram_reporter is not None:
             TM._bot_token = self._bot_token
             TM._chat_id = self._chat_id
@@ -581,11 +603,13 @@ class RunManager:
         Examples
         --------
         >>> import lip_pps_run_manager as RM
-        >>> John = RM.RunManager("Run0001")
-        >>> John.create_run()
-        >>> John.task_ran_successfully("myTask")
+        >>> with RM.RunManager("Run0001", telegram_bot_token="bot_token", telegram_chat_id="chat_id") as John:
+        ...   John.create_run()
+        ...   John.send_message("This is an example message")
 
         """
+        if not self._in_run_context:
+            raise RuntimeError("Tried calling send_message() while not inside a run context. Use the 'with RunManager as handle' syntax")
 
         if not isinstance(message, str):
             raise TypeError("The `message` must be a str type object, received object of type {}".format(type(message)))
@@ -632,12 +656,14 @@ class RunManager:
         Examples
         --------
         >>> import lip_pps_run_manager as RM
-        >>> John = RM.RunManager("Run0001", telegram_bot_token="bot_token", telegram_chat_id="chat_id")
-        >>> John.create_run()
-        >>> message_id = John.send_message("This is an example message")
-        >>> John.edit_message("This is the edited text", message_id)
+        >>> with RM.RunManager("Run0001", telegram_bot_token="bot_token", telegram_chat_id="chat_id") as John:
+        ...   John.create_run()
+        ...   message_id = John.send_message("This is an example message")
+        ...   John.edit_message("This is the edited message", message_id)
 
         """
+        if not self._in_run_context:
+            raise RuntimeError("Tried calling edit_message() while not inside a run context. Use the 'with RunManager as handle' syntax")
 
         if not isinstance(message, str):
             raise TypeError("The `message` must be a str type object, received object of type {}".format(type(message)))
@@ -718,6 +744,7 @@ class TaskManager(RunManager):
     _task_status_message_id = None
     _minimum_update_time = None
     _minimum_warn_time = None
+    _own_run_context = False
 
     def __init__(
         self,
@@ -977,6 +1004,11 @@ class TaskManager(RunManager):
         self._locals_on_call = frame.f_back.f_locals
 
         self._in_task_context = True
+        if not self._in_run_context:
+            self._own_run_context = True
+            self._in_run_context = True
+            if self._bot_token is not None and self._chat_id is not None:
+                self._telegram_reporter = TelegramReporter(self._bot_token, self._chat_id)
 
         self._start_time = datetime.datetime.now()
         if self._telegram_reporter is not None:
@@ -1034,6 +1066,9 @@ class TaskManager(RunManager):
                 # shutil.copyfile(self._script_to_backup, self.task_path / ("backup.{}".format(self._script_to_backup.parts[-1])))
             else:
                 raise RuntimeError("Somehow you are trying to backup a file that does not exist")
+
+        if self._own_run_context:
+            self._in_run_context = False
 
     def warn(self, message: str):
         """Send a warning to telegram
