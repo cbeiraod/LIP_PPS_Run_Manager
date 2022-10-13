@@ -299,9 +299,12 @@ class RunManager:
         else:
             create_run(path_to_directory=self.path_directory.parent, run_name=self.run_name)
 
-        if not self._status_message_id:
-            if self._telegram_reporter is not None:
-                self._status_message_id = self.send_message("🚀🚀🚀 Started processing Run {}".format(self.run_name))
+        if self._telegram_reporter is not None:
+            run_status = "🚀🚀🚀 Started processing Run {}".format(self.run_name)
+            if not self._status_message_id:
+                self._status_message_id = self.send_message(run_status)
+            else:
+                self._status_message_id = self.edit_message(run_status, self._status_message_id)
 
         self._run_created = True
 
