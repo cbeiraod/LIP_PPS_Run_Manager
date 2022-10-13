@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import lip_pps_run_manager as RM
 
 
@@ -5,8 +7,7 @@ class SessionReplacement:
     _params = {}
     _error_type = None
 
-    def __init__(self, error_type=None):
-        self._error_type = error_type
+    def __init__(self):
         pass
 
     def __getitem__(self, key: str):
@@ -16,7 +17,10 @@ class SessionReplacement:
             return self._params[key]
         raise RuntimeError("Unknown key: {}".format(key))  # pragma: no cover
 
-    def clear(self):
+    def _set_error_type(self, error_type=None):
+        self._error_type = error_type
+
+    def _clear(self):
         self._params = {}
 
     def get(self, url: str, data=None, timeout=None):
@@ -53,6 +57,7 @@ class SessionReplacement:
         return self
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_telegram_reporter():
     reporter = RM.TelegramReporter("bot_token", "chat_id")
 
@@ -60,6 +65,7 @@ def test_telegram_reporter():
     assert reporter.chat_id == "chat_id"
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_fail_telegram_reporter():
     try:
         RM.TelegramReporter(1, "chat_id")
@@ -72,12 +78,12 @@ def test_fail_telegram_reporter():
         assert str(e) == ("The `chat_id` must be a str type object, received object of type <class 'int'>")
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_telegram_reporter_send_message():
-    sessionHandler = SessionReplacement()
     bot_token = "bot_token"
     chat_id = "chat_id"
     reporter = RM.TelegramReporter(bot_token, chat_id)
-    reporter._session = sessionHandler  # This prevents actual HTTP requests from being generated
+    sessionHandler = reporter._session
 
     message = "Hello there"
     retVal = reporter.send_message(message_text=message, reply_to_message_id=None)
@@ -96,13 +102,12 @@ def test_telegram_reporter_send_message():
     assert retVal["data"]["reply_to_message_id"] == reply_to_message_id
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_fail_telegram_reporter_send_message():
-    sessionHandler = SessionReplacement(error_type="KeyboardInterrupt")
-    sessionHandler2 = SessionReplacement(error_type="Exception")
     bot_token = "bot_token"
     chat_id = "chat_id"
     reporter = RM.TelegramReporter(bot_token, chat_id)
-    reporter._session = sessionHandler  # This prevents actual HTTP requests from being generated
+    sessionHandler = reporter._session
 
     message = "Hello there"
 
@@ -116,24 +121,25 @@ def test_fail_telegram_reporter_send_message():
     except TypeError as e:
         assert str(e) == ("The `reply_to_message_id` must be a str type object, received object of type <class 'int'>")
 
+    sessionHandler._set_error_type(error_type="KeyboardInterrupt")
     try:
         reporter.send_message(message_text=message, reply_to_message_id=None)
     except KeyboardInterrupt as e:
         assert isinstance(e, KeyboardInterrupt)
 
-    reporter._session = sessionHandler2
+    sessionHandler._set_error_type(error_type="Exception")
     try:
         reporter.send_message(message_text=message, reply_to_message_id=None)
     except RuntimeWarning as e:
         assert str(e) == "Failed sending to telegram. Reason: Exception()"
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_telegram_reporter_edit_message():
-    sessionHandler = SessionReplacement()
     bot_token = "bot_token"
     chat_id = "chat_id"
     reporter = RM.TelegramReporter(bot_token, chat_id)
-    reporter._session = sessionHandler  # This prevents actual HTTP requests from being generated
+    sessionHandler = reporter._session
 
     message = "Hello there"
     message_id = "message_id"
@@ -147,13 +153,12 @@ def test_telegram_reporter_edit_message():
     assert retVal["data"]['text'] == message
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_fail_telegram_reporter_edit_message():
-    sessionHandler = SessionReplacement(error_type="KeyboardInterrupt")
-    sessionHandler2 = SessionReplacement(error_type="Exception")
     bot_token = "bot_token"
     chat_id = "chat_id"
     reporter = RM.TelegramReporter(bot_token, chat_id)
-    reporter._session = sessionHandler  # This prevents actual HTTP requests from being generated
+    sessionHandler = reporter._session
 
     message = "Hello there"
     message_id = "message_id"
@@ -168,18 +173,20 @@ def test_fail_telegram_reporter_edit_message():
     except TypeError as e:
         assert str(e) == ("The `message_id` must be a str type object, received object of type <class 'int'>")
 
+    sessionHandler._set_error_type(error_type="KeyboardInterrupt")
     try:
         reporter.edit_message(message_text=message, message_id=message_id)
     except KeyboardInterrupt as e:
         assert isinstance(e, KeyboardInterrupt)
 
-    reporter._session = sessionHandler2
+    sessionHandler._set_error_type(error_type="Exception")
     try:
         reporter.edit_message(message_text=message, message_id=message_id)
     except RuntimeWarning as e:
         assert str(e) == "Failed sending to telegram. Reason: Exception()"
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_telegram_reporter_repr():
     bot_token = "bot_token"
     chat_id = "chat_id"
