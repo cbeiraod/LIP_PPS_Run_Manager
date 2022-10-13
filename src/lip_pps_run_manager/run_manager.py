@@ -306,7 +306,13 @@ class RunManager:
         self._run_created = True
 
     def handle_task(
-        self, task_name: str, drop_old_data: bool = True, backup_python_file: bool = True, telegram_loop_iterations: int = None
+        self,
+        task_name: str,
+        drop_old_data: bool = True,
+        backup_python_file: bool = True,
+        telegram_loop_iterations: int = None,
+        minimum_update_time_seconds: int = 60,
+        minimum_warn_time_seconds: int = 60,
     ):
         """Method that creates a handle to a manager for a specific task
 
@@ -330,6 +336,14 @@ class RunManager:
             If telegram reporting is enabled, this is the number of
             expected iterations in the processing loop. Use
             `loop_tick()` to keep track of progress during the loop.
+        minimum_update_time_seconds
+            The minimum time allowed between updates to telegram. This
+            parameter is important in order to guarantee that the limits
+            imposed by telegram are respected.
+        minimum_warn_time_seconds
+            The minimum time allowed between warnings to telegram. This
+            parameter is important in order to guarantee that the limits
+            imposed by telegram are respected.
 
         Raises
         ------
@@ -371,6 +385,20 @@ class RunManager:
                 )
             )
 
+        if not isinstance(minimum_update_time_seconds, int):
+            raise TypeError(
+                "The `minimum_update_time_seconds` must be a int type object, received object of type {}".format(
+                    type(minimum_update_time_seconds)
+                )
+            )
+
+        if not isinstance(minimum_warn_time_seconds, int):
+            raise TypeError(
+                "The `minimum_warn_time_seconds` must be a int type object, received object of type {}".format(
+                    type(minimum_warn_time_seconds)
+                )
+            )
+
         if not self._run_created:
             self.create_run(True)
 
@@ -384,6 +412,8 @@ class RunManager:
             drop_old_data=drop_old_data,
             script_to_backup=script_to_backup,
             loop_iterations=telegram_loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
         )
         TM._run_created = self._run_created
         if self._telegram_reporter is not None:
