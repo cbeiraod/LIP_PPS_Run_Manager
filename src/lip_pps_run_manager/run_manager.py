@@ -469,7 +469,7 @@ class RunManager:
         return self.path_directory / task_name
 
     def task_ran_successfully(self, task_name: str) -> bool:
-        """Check if a task has completed with success
+        """Check if a task has ran with success
 
         Parameters
         ----------
@@ -492,6 +492,49 @@ class RunManager:
         >>> John = RM.RunManager("Run0001")
         >>> John.create_run()
         >>> John.task_ran_successfully("myTask")
+
+        """
+
+        if not isinstance(task_name, str):
+            raise TypeError("The `task_name` must be a str type object, received object of type {}".format(type(task_name)))
+
+        success = False
+
+        try:
+            with open(self.get_task_path(task_name) / "task_report.txt", "r") as in_file:
+                for line in in_file:
+                    if "task_status: no errors" in line or "task_status: incomplete" in line:
+                        success = True
+                        break
+        except FileNotFoundError:
+            pass
+
+        return success
+
+    def task_completed(self, task_name: str) -> bool:
+        """Check if a task has completed with success
+
+        Parameters
+        ----------
+        task_name
+            The name of the task to check
+
+        Raises
+        ------
+        TypeError
+            If any parameter has the incorrect type
+
+        Returns
+        -------
+        bool
+            `True` if completed, `False` otherwise
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> John = RM.RunManager("Run0001")
+        >>> John.create_run()
+        >>> John.task_completed("myTask")
 
         """
 
