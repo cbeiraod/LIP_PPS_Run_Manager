@@ -711,6 +711,14 @@ class TaskManager(RunManager):
         processed. This value is used mostly for the telegram reporting
         in order to report the current status of the task progress. Use
         `loop_tick()` to keep track of progress during the loop.
+    minimum_update_time_seconds
+        The minimum time allowed between updates to telegram. This
+        parameter is important in order to guarantee that the limits
+        imposed by telegram are respected.
+    minimum_warn_time_seconds
+        The minimum time allowed between warnings to telegram. This
+        parameter is important in order to guarantee that the limits
+        imposed by telegram are respected.
 
     Raises
     ------
@@ -728,10 +736,10 @@ class TaskManager(RunManager):
     `handle_task` method implicitly calls this class.
 
     >>> import lip_pps_run_manager as RM
-    >>> John = RM.RunManager("Run0001")
-    >>> John.create_run()
-    >>> with John.handle_task("myTask") as taskHandler:
-    ...   print("Process task here...")
+    >>> with RM.RunManager("Run0001") as John:
+    ...   John.create_run()
+    ...   with John.handle_task("myTask") as taskHandler:
+    ...     print("Process task here...")
 
     """
 
