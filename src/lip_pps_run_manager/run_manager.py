@@ -199,8 +199,9 @@ class RunManager:
     _run_created = False
     _status_message_id = None
     _in_run_context = False
+    _rate_limit = True
 
-    def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None):
+    def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None, rate_limit: bool = True):
         if not isinstance(path_to_run_directory, Path):
             raise TypeError(
                 "The `path_to_run_directory` must be a Path type object, received object of type {}".format(type(path_to_run_directory))
@@ -214,19 +215,23 @@ class RunManager:
         if telegram_chat_id is not None and not isinstance(telegram_chat_id, str):
             raise TypeError("The `telegram_chat_id` must be a str type object, received object of type {}".format(type(telegram_chat_id)))
 
+        if not isinstance(rate_limit, bool):
+            raise TypeError("The `rate_limit` must be a bool type object, received object of type {}".format(type(rate_limit)))
+
         self._path_directory = path_to_run_directory
 
         if telegram_bot_token is not None and telegram_chat_id is not None:
             self._bot_token = telegram_bot_token
             self._chat_id = telegram_chat_id
+            self._rate_limit = rate_limit
 
     def __repr__(self):
         """Get the python representation of this class"""
         if self._bot_token is None or self._chat_id is None:
             return "RunManager({})".format(repr(self.path_directory))
         else:
-            return "RunManager({}, telegram_bot_token={}, telegram_chat_id={})".format(
-                repr(self.path_directory), repr(self._bot_token), repr(self._chat_id)
+            return "RunManager({}, telegram_bot_token={}, telegram_chat_id={}, rate_limit={})".format(
+                repr(self.path_directory), repr(self._bot_token), repr(self._chat_id), repr(self._rate_limit)
             )
 
     @property
@@ -263,7 +268,7 @@ class RunManager:
         self._in_run_context = True
 
         if self._bot_token is not None and self._chat_id is not None:
-            self._telegram_reporter = TelegramReporter(self._bot_token, self._chat_id)
+            self._telegram_reporter = TelegramReporter(self._bot_token, self._chat_id, rate_limit=self._rate_limit)
             self._status_message_id = self.send_message("⏰ Preparing for Run {}".format(self.run_name))
 
         return self
