@@ -90,7 +90,7 @@ def test_fail_telegram_reporter():
 def test_telegram_reporter_send_message():
     bot_token = "bot_token"
     chat_id = "chat_id"
-    reporter = RM.TelegramReporter(bot_token, chat_id)
+    reporter = RM.TelegramReporter(bot_token, chat_id, rate_limit=False)
     sessionHandler = reporter._session
 
     message = "Hello there"
@@ -114,7 +114,7 @@ def test_telegram_reporter_send_message():
 def test_fail_telegram_reporter_send_message():
     bot_token = "bot_token"
     chat_id = "chat_id"
-    reporter = RM.TelegramReporter(bot_token, chat_id)
+    reporter = RM.TelegramReporter(bot_token, chat_id, rate_limit=False)
     sessionHandler = reporter._session
 
     message = "Hello there"
@@ -146,7 +146,7 @@ def test_fail_telegram_reporter_send_message():
 def test_telegram_reporter_edit_message():
     bot_token = "bot_token"
     chat_id = "chat_id"
-    reporter = RM.TelegramReporter(bot_token, chat_id)
+    reporter = RM.TelegramReporter(bot_token, chat_id, rate_limit=False)
     sessionHandler = reporter._session
 
     message = "Hello there"
@@ -165,7 +165,7 @@ def test_telegram_reporter_edit_message():
 def test_fail_telegram_reporter_edit_message():
     bot_token = "bot_token"
     chat_id = "chat_id"
-    reporter = RM.TelegramReporter(bot_token, chat_id)
+    reporter = RM.TelegramReporter(bot_token, chat_id, rate_limit=False)
     sessionHandler = reporter._session
 
     message = "Hello there"
@@ -198,6 +198,7 @@ def test_fail_telegram_reporter_edit_message():
 def test_telegram_reporter_repr():
     bot_token = "bot_token"
     chat_id = "chat_id"
-    reporter = RM.TelegramReporter(bot_token, chat_id)
+    rate_limit = False
+    reporter = RM.TelegramReporter(bot_token, chat_id, rate_limit=rate_limit)
 
-    assert repr(reporter) == "TelegramReporter({}, {})".format(repr(bot_token), repr(chat_id))
+    assert repr(reporter) == "TelegramReporter({}, {}, rate_limit={})".format(repr(bot_token), repr(chat_id), repr(rate_limit))
