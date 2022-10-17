@@ -21,13 +21,14 @@ def test_init_no_bot():
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath)
+    John = RM.RunManager(runPath, rate_limit=False)
 
     assert John._path_directory == runPath
     assert John.path_directory == runPath
     assert John.run_name == run_name
     assert John._bot_token is None
     assert John._chat_id is None
+    assert John._rate_limit
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
@@ -36,13 +37,15 @@ def test_init_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     assert John._bot_token == bot_token
     assert John._chat_id == chat_id
+    assert John._rate_limit == rate_limit
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
@@ -105,6 +108,19 @@ def test_init_bad_type_chat_id():
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_rate_limit():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    try:
+        RM.RunManager(runPath, rate_limit=2)
+    except TypeError as e:
+        assert str(e) == "The `rate_limit` must be a bool type object, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_repr_no_bot():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
@@ -122,12 +138,15 @@ def test_repr_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
-    assert repr(John) == "RunManager({}, telegram_bot_token={}, telegram_chat_id={})".format(repr(runPath), repr(bot_token), repr(chat_id))
+    assert repr(John) == "RunManager({}, telegram_bot_token={}, telegram_chat_id={}, rate_limit={})".format(
+        repr(runPath), repr(bot_token), repr(chat_id), repr(rate_limit)
+    )
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
@@ -403,10 +422,11 @@ def test_enter_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     assert John._telegram_reporter is None
     assert John._status_message_id is None
@@ -440,10 +460,11 @@ def test_exit_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     with John:
         pass
@@ -463,10 +484,11 @@ def test_exit_with_bot_no_status():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     with John as john:
         john._status_message_id = None
@@ -486,10 +508,11 @@ def test_exit_with_bot_exception():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     try:
         with John:
@@ -563,10 +586,11 @@ def test_create_run_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         John.create_run()
 
         httpRequest = John._telegram_reporter._session.json()
@@ -580,10 +604,11 @@ def test_create_run_with_bot_no_status():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         John._status_message_id = None
         John.create_run()
 
@@ -598,10 +623,11 @@ def test_send_message_outside_context():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     try:
         John.send_message("Test message")
@@ -615,10 +641,11 @@ def test_edit_message_outside_context():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     try:
         John.edit_message("Test message", "message to edit")
@@ -632,10 +659,11 @@ def test_send_message_bad_type_message():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.send_message(2)
         except TypeError as e:
@@ -648,10 +676,11 @@ def test_edit_message_bad_type_message():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.edit_message(2, "message id")
         except TypeError as e:
@@ -664,10 +693,11 @@ def test_send_message_bad_type_reply_to_message_id():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.send_message("Test message", 2)
         except TypeError as e:
@@ -680,10 +710,11 @@ def test_edit_message_bad_type_message_id():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.edit_message("Test message", 2)
         except TypeError as e:
@@ -724,10 +755,11 @@ def test_send_message_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         test_message = "This is the test message"
         message_id = "The message ID to reply to"
 
@@ -744,10 +776,11 @@ def test_edit_message_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         test_message = "This is the test message"
         message_id = "The message ID to reply to"
 
@@ -764,10 +797,11 @@ def test_send_message_with_bot_exception():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         test_message = "This is the test message"
         message_id = "The message ID to reply to"
 
@@ -791,10 +825,11 @@ def test_send_message_with_bot_keyboard_interrupt():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         test_message = "This is the test message"
         message_id = "The message ID to reply to"
 
@@ -814,10 +849,11 @@ def test_edit_message_with_bot_exception():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         test_message = "This is the test message"
         message_id = "The message ID to reply to"
 
@@ -841,10 +877,11 @@ def test_edit_message_with_bot_keyboard_interrupt():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         test_message = "This is the test message"
         message_id = "The message ID to reply to"
 
@@ -864,10 +901,11 @@ def test_handle_task_outside_context():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id)
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit)
 
     try:
         John.handle_task("myTask")
@@ -881,10 +919,11 @@ def test_handle_task_bad_type_task_name():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task(2)
         except TypeError as e:
@@ -897,10 +936,11 @@ def test_handle_task_bad_type_drop_old_data():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", drop_old_data=2)
         except TypeError as e:
@@ -913,10 +953,11 @@ def test_handle_task_bad_type_backup_python_file():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", backup_python_file=2)
         except TypeError as e:
@@ -929,10 +970,11 @@ def test_handle_task_bad_type_telegram_loop_iterations():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", telegram_loop_iterations="2")
         except TypeError as e:
@@ -945,10 +987,11 @@ def test_handle_task_bad_type_minimum_update_time_seconds():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", minimum_update_time_seconds="2")
         except TypeError as e:
@@ -961,10 +1004,11 @@ def test_handle_task_bad_type_minimum_warn_time_seconds():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", minimum_warn_time_seconds="2")
         except TypeError as e:
@@ -1022,10 +1066,11 @@ def test_handle_task_with_bot():
     run_name = "Run0001"
     bot_token = "bot_token"
     chat_id = "chat_id"
+    rate_limit = False
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
 
-    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id) as John:
+    with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         David = John.handle_task("myTask1", backup_python_file=True)
 
         assert David._bot_token == John._bot_token
