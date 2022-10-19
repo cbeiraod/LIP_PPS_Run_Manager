@@ -770,6 +770,7 @@ class TaskManager(RunManager):
         loop_iterations: int = None,
         minimum_update_time_seconds: int = 60,
         minimum_warn_time_seconds: int = 60,
+        rate_limit: bool = True,
     ):
         if not isinstance(path_to_run, Path):
             raise TypeError("The `path_to_run` must be a Path type object, received object of type {}".format(type(path_to_run)))
@@ -820,7 +821,12 @@ class TaskManager(RunManager):
         if script_to_backup is not None and not script_to_backup.is_file():
             raise RuntimeError("The 'script_to_backup', if set, must point to a file. It points to: {}".format(script_to_backup))
 
-        super().__init__(path_to_run_directory=path_to_run, telegram_bot_token=telegram_bot_token, telegram_chat_id=telegram_chat_id)
+        super().__init__(
+            path_to_run_directory=path_to_run,
+            telegram_bot_token=telegram_bot_token,
+            telegram_chat_id=telegram_chat_id,
+            rate_limit=rate_limit,
+        )
         self._task_name = task_name
         self._drop_old_data = drop_old_data
         self._script_to_backup = script_to_backup
@@ -843,15 +849,16 @@ class TaskManager(RunManager):
                     repr(self._drop_old_data),
                     repr(self._script_to_backup),
                     repr(self._loop_iterations),
-                    repr(self._minimum_update_time),
-                    repr(self._minimum_warn_time),
+                    repr(int(self._minimum_update_time.total_seconds())),
+                    repr(int(self._minimum_warn_time.total_seconds())),
                 )
             )
         else:
             return (
                 "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, "
                 "telegram_bot_token={}, telegram_chat_id={}, loop_iterations={}, "
-                "minimum_update_time_seconds={}, minimum_warn_time_seconds={})".format(
+                "minimum_update_time_seconds={}, minimum_warn_time_seconds={}, "
+                "rate_limit={})".format(
                     repr(self.path_directory),
                     repr(self.task_name),
                     repr(self._drop_old_data),
@@ -859,8 +866,9 @@ class TaskManager(RunManager):
                     repr(self._bot_token),
                     repr(self._chat_id),
                     repr(self._loop_iterations),
-                    repr(self._minimum_update_time),
-                    repr(self._minimum_warn_time),
+                    repr(int(self._minimum_update_time.total_seconds())),
+                    repr(int(self._minimum_warn_time.total_seconds())),
+                    repr(self._rate_limit),
                 )
             )
 
@@ -1035,7 +1043,7 @@ class TaskManager(RunManager):
             self._own_run_context = True
             self._in_run_context = True
             if self._bot_token is not None and self._chat_id is not None:
-                self._telegram_reporter = TelegramReporter(self._bot_token, self._chat_id)
+                self._telegram_reporter = TelegramReporter(self._bot_token, self._chat_id, rate_limit=self._rate_limit)
 
         self._start_time = datetime.datetime.now()
         if self._telegram_reporter is not None:
