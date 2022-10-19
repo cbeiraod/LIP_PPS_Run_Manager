@@ -977,12 +977,19 @@ class TaskManager(RunManager):
                         humanize.naturaltime(datetime.datetime.now() - self.expected_finish_time)
                     )
                     new_status += "     Progress: {} % ({}/{})\n\n\n".format(
-                        int((self.processed_iterations + 1) / self._loop_iterations), self.processed_iterations + 1, self._loop_iterations
+                        int(float(self.processed_iterations) / self._loop_iterations * 100),
+                        int(self.processed_iterations),
+                        int(self._loop_iterations),
                     )
                 else:
                     new_status += "     Unknown expected finish time and remaining time\n\n"
                     if self.processed_iterations is not None:
-                        new_status += "     Progress: {} out of an unknown number of iterations\n\n\n".format(self.processed_iterations + 1)
+                        if self._loop_iterations is None or self._loop_iterations == 0:
+                            new_status += "     Progress: {} out of an unknown number of iterations\n\n\n".format(self.processed_iterations)
+                        else:
+                            new_status += "     Progress: {} out of {} iterations\n\n\n".format(
+                                self.processed_iterations, self._loop_iterations
+                            )
                 new_status += "Last update of this message: {}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
 
                 if create_status:
