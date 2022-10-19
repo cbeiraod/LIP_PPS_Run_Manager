@@ -941,7 +941,7 @@ class TaskManager(RunManager):
             self._processed_iterations = 0
 
         self._processed_iterations += count
-        if self.processed_iterations > self._loop_iterations:
+        if self._loop_iterations is not None and self.processed_iterations > self._loop_iterations:
             self.warn(
                 "The number of processed iterations has exceeded the "
                 "set number of iterations.\n  - Expected {} iterations;"
