@@ -77,6 +77,7 @@ def test_init_bad_type_path():
 
     try:
         RM.RunManager(2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `path_to_run_directory` must be a Path type object, received object of type <class 'int'>"
 
@@ -90,6 +91,7 @@ def test_init_bad_type_bot_token():
 
     try:
         RM.RunManager(runPath, telegram_bot_token=2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `telegram_bot_token` must be a str type object, received object of type <class 'int'>"
 
@@ -103,6 +105,7 @@ def test_init_bad_type_chat_id():
 
     try:
         RM.RunManager(runPath, telegram_chat_id=2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `telegram_chat_id` must be a str type object, received object of type <class 'int'>"
 
@@ -116,6 +119,7 @@ def test_init_bad_type_rate_limit():
 
     try:
         RM.RunManager(runPath, rate_limit=2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `rate_limit` must be a bool type object, received object of type <class 'int'>"
 
@@ -173,6 +177,7 @@ def test_get_task_path_bad_type():
 
     try:
         John.get_task_path(2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `task_name` must be a str type object, received object of type <class 'int'>"
 
@@ -188,6 +193,7 @@ def test_task_ran_successfully_bad_type():
 
     try:
         John.task_ran_successfully(2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `task_name` must be a str type object, received object of type <class 'int'>"
 
@@ -300,6 +306,7 @@ def test_task_completed_bad_type():
 
     try:
         John.task_completed(2)
+        raise Exception("Passed through a fail condition without failing")
     except TypeError as e:
         assert str(e) == "The `task_name` must be a str type object, received object of type <class 'int'>"
 
@@ -537,6 +544,7 @@ def test_create_run_outside_context():
 
     try:
         John.create_run()
+        raise Exception("Passed through a fail condition without failing")
     except RuntimeError as e:
         assert str(e) == "Tried calling create_run() while not inside a run context. Use the 'with RunManager as handle' syntax"
 
@@ -576,6 +584,7 @@ def test_create_run_no_bot_repeated_calls():
 
         try:
             john.create_run(raise_error=True)
+            raise Exception("Passed through a fail condition without failing")
         except RuntimeError as e:
             assert str(e) == "Can not create run '{}', in '{}' because it already exists.".format(john.run_name, tmpdir)
 
@@ -631,6 +640,7 @@ def test_send_message_outside_context():
 
     try:
         John.send_message("Test message")
+        raise Exception("Passed through a fail condition without failing")
     except RuntimeError as e:
         assert str(e) == "Tried calling send_message() while not inside a run context. Use the 'with RunManager as handle' syntax"
 
@@ -649,6 +659,7 @@ def test_edit_message_outside_context():
 
     try:
         John.edit_message("Test message", "message to edit")
+        raise Exception("Passed through a fail condition without failing")
     except RuntimeError as e:
         assert str(e) == "Tried calling edit_message() while not inside a run context. Use the 'with RunManager as handle' syntax"
 
@@ -666,6 +677,7 @@ def test_send_message_bad_type_message():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.send_message(2)
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `message` must be a str type object, received object of type <class 'int'>"
 
@@ -683,6 +695,7 @@ def test_edit_message_bad_type_message():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.edit_message(2, "message id")
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `message` must be a str type object, received object of type <class 'int'>"
 
@@ -700,6 +713,7 @@ def test_send_message_bad_type_reply_to_message_id():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.send_message("Test message", 2)
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `reply_to_message_id` must be a str type object or None, received object of type <class 'int'>"
 
@@ -717,6 +731,7 @@ def test_edit_message_bad_type_message_id():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.edit_message("Test message", 2)
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `message_id` must be a str type object, received object of type <class 'int'>"
 
@@ -731,6 +746,7 @@ def test_send_message_no_bot():
     with RM.RunManager(runPath) as John:
         try:
             John.send_message("Test message")
+            raise Exception("Passed through a fail condition without failing")
         except RuntimeError as e:
             assert str(e) == "You can only send messages if the TelegramReporter is configured"
 
@@ -745,6 +761,7 @@ def test_edit_message_no_bot():
     with RM.RunManager(runPath) as John:
         try:
             John.edit_message("Test message", "message id")
+            raise Exception("Passed through a fail condition without failing")
         except RuntimeError as e:
             assert str(e) == "You can only send messages if the TelegramReporter is configured"
 
@@ -809,6 +826,7 @@ def test_send_message_with_bot_exception():
 
         try:
             John.send_message(test_message, message_id)
+            raise Exception("Passed through a fail condition without failing")
         except RuntimeWarning as e:
             assert (
                 str(e) == "Could not connect to Telegram to send the message. "
@@ -837,6 +855,7 @@ def test_send_message_with_bot_keyboard_interrupt():
 
         try:
             John.send_message(test_message, message_id)
+            raise Exception("Passed through a fail condition without failing")
         except KeyboardInterrupt as e:
             assert isinstance(e, KeyboardInterrupt)
 
@@ -861,6 +880,7 @@ def test_edit_message_with_bot_exception():
 
         try:
             John.edit_message(test_message, message_id)
+            raise Exception("Passed through a fail condition without failing")
         except RuntimeWarning as e:
             assert (
                 str(e) == "Could not connect to Telegram to send the message. "
@@ -889,6 +909,7 @@ def test_edit_message_with_bot_keyboard_interrupt():
 
         try:
             John.edit_message(test_message, message_id)
+            raise Exception("Passed through a fail condition without failing")
         except KeyboardInterrupt as e:
             assert isinstance(e, KeyboardInterrupt)
 
@@ -909,6 +930,7 @@ def test_handle_task_outside_context():
 
     try:
         John.handle_task("myTask")
+        raise Exception("Passed through a fail condition without failing")
     except RuntimeError as e:
         assert str(e) == "Tried calling handle_task() while not inside a run context. Use the 'with RunManager as handle' syntax"
 
@@ -926,6 +948,7 @@ def test_handle_task_bad_type_task_name():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task(2)
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `task_name` must be a str type object, received object of type <class 'int'>"
 
@@ -943,6 +966,7 @@ def test_handle_task_bad_type_drop_old_data():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", drop_old_data=2)
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `drop_old_data` must be a bool type object, received object of type <class 'int'>"
 
@@ -960,6 +984,7 @@ def test_handle_task_bad_type_backup_python_file():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", backup_python_file=2)
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `backup_python_file` must be a bool type object, received object of type <class 'int'>"
 
@@ -977,6 +1002,7 @@ def test_handle_task_bad_type_telegram_loop_iterations():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", telegram_loop_iterations="2")
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `telegram_loop_iterations` must be a int type object or None, received object of type <class 'str'>"
 
@@ -994,6 +1020,7 @@ def test_handle_task_bad_type_minimum_update_time_seconds():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", minimum_update_time_seconds="2")
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `minimum_update_time_seconds` must be a int type object, received object of type <class 'str'>"
 
@@ -1011,6 +1038,7 @@ def test_handle_task_bad_type_minimum_warn_time_seconds():
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
             John.handle_task("myTask", minimum_warn_time_seconds="2")
+            raise Exception("Passed through a fail condition without failing")
         except TypeError as e:
             assert str(e) == "The `minimum_warn_time_seconds` must be a int type object, received object of type <class 'str'>"
 
