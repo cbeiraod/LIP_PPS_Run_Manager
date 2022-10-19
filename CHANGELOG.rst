@@ -2,11 +2,14 @@
 Changelog
 =========
 
-Current (2022-10-12)
+Current (2022-10-19)
 --------------------
 
+0.2.0 (2022-10-19)
+------------------
+
 * Added TelegramReporter class, to handle a connection to telegram via the bot API and to publish messages to it
-* Integrating TelegramReporter into RunManager and TaskManager so that the status and progress of runs and tasks is published to telegram for ease of monitoring
+* Integrated TelegramReporter into RunManager and TaskManager so that the status and progress of runs and tasks can be published to telegram for ease of monitoring
 * Changed RunManager to use the 'with syntax', **this is a breaking change**
 * Fixed some typos in the documentation
 
