@@ -5,6 +5,8 @@ Changelog
 Current (2022-10-19)
 --------------------
 
+* Added the version of LIP-PPS-Run-Manager to the script backup
+
 0.2.0 (2022-10-19)
 ------------------
 
