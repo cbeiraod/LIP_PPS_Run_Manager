@@ -51,9 +51,9 @@ Overview
     :alt: Supported implementations
     :target: https://pypi.org/project/lip-pps-run-manager
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/cbeiraod/LIP_PPS_Run_Manager/v0.1.0.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/cbeiraod/LIP_PPS_Run_Manager/v0.2.0.svg
     :alt: Commits since latest release
-    :target: https://github.com/cbeiraod/LIP_PPS_Run_Manager/compare/v0.1.0...main
+    :target: https://github.com/cbeiraod/LIP_PPS_Run_Manager/compare/v0.2.0...main
 
 
 
