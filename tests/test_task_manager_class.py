@@ -2,13 +2,17 @@ import copy
 import datetime
 import shutil
 import tempfile
-import time
 import traceback
 from pathlib import Path
+from unittest.mock import patch
 
 import humanize
+import pytest
+from test_telegram_reporter_class import SessionReplacement
 
 import lip_pps_run_manager as RM
+
+testdata_true_false = [(True), (False)]
 
 
 class PrepareRunDir:
@@ -45,566 +49,1710 @@ class PrepareRunDir:
         shutil.rmtree(self.run_path)
 
 
-def test_task_manager():
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_no_bot():
     with PrepareRunDir() as handler:
-        runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, loop_iterations=20)
-        assert isinstance(John, RM.TaskManager)
-        assert John.task_name == "myTask"
-        assert John.task_path == runPath / "myTask"
-        assert not (runPath / "myTask").is_dir()
-        assert John.processed_iterations == 0
+        task_name = "testTask"
+        Tobias = RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None)
+
+        assert isinstance(Tobias, RM.TaskManager)
+        assert Tobias.task_name == task_name
+        assert Tobias.task_path == handler.run_path / task_name
+        assert not Tobias.task_path.is_dir()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_with_bot():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        Tobias = RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=True, script_to_backup=None, telegram_bot_token=bot_token, telegram_chat_id=chat_id
+        )
+
+        assert Tobias._bot_token == bot_token
+        assert Tobias._chat_id == chat_id
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_path():
+    try:
+        task_name = "testTask"
+        RM.TaskManager("/bad/path", task_name, drop_old_data=True, script_to_backup=None)
+    except TypeError as e:
+        assert str(e) == "The `path_to_run` must be a Path type object, received object of type <class 'str'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_name():
+    with PrepareRunDir() as handler:
+        task_name = 1
 
         try:
-            John.loop_tick()
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None)
+        except TypeError as e:
+            assert str(e) == "The `task_name` must be a str type object, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_drop_old_data():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=1, script_to_backup=None)
+        except TypeError as e:
+            assert str(e) == "The `drop_old_data` must be a bool type object, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_script_to_backup():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=1)
+        except TypeError as e:
+            assert str(e) == "The `script_to_backup` must be a Path type object or None, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_telegram_bot_token():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, telegram_bot_token=2)
+        except TypeError as e:
+            assert str(e) == "The `telegram_bot_token` must be a str type object or None, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_telegram_chat_id():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, telegram_chat_id=2)
+        except TypeError as e:
+            assert str(e) == "The `telegram_chat_id` must be a str type object or None, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_loop_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, loop_iterations="2")
+        except TypeError as e:
+            assert str(e) == "The `loop_iterations` must be a int type object or None, received object of type <class 'str'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_minimum_update_time_seconds():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, minimum_update_time_seconds="2")
+        except TypeError as e:
+            assert str(e) == "The `minimum_update_time_seconds` must be a int type object, received object of type <class 'str'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_minimum_warn_time_seconds():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, minimum_warn_time_seconds="2")
+        except TypeError as e:
+            assert str(e) == "The `minimum_warn_time_seconds` must be a int type object, received object of type <class 'str'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_run_directory():
+    with PrepareRunDir(createRunInfo=False) as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None)
+        except RuntimeError as e:
+            assert str(e) == "The 'path_to_run' ({}) does not look like the directory of a run...".format(handler.run_path)
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_no_script_to_backup():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        try:
+            RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=handler.run_path)
+        except RuntimeError as e:
+            assert str(e) == "The 'script_to_backup', if set, must point to a file. It points to: {}".format(handler.run_path)
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_loop_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+
+        Tobias = RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None)
+
+        assert Tobias._loop_iterations is None
+        assert Tobias._processed_iterations is None
+
+        Luke = RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, loop_iterations=20)
+
+        assert Luke._loop_iterations == 20
+        assert Luke._processed_iterations == 0
+        assert Luke.processed_iterations == 0
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_repr_with_bot():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        assert repr(Tobias) == (
+            "TaskManager({}, {}, drop_old_data={}, "
+            "script_to_backup={}, telegram_bot_token={}, "
+            "telegram_chat_id={}, loop_iterations={}, "
+            "minimum_update_time_seconds={}, "
+            "minimum_warn_time_seconds={}, rate_limit={})".format(
+                repr(handler.run_path),
+                repr(task_name),
+                repr(drop_old_data),
+                repr(script_to_backup),
+                repr(bot_token),
+                repr(chat_id),
+                repr(loop_iterations),
+                repr(minimum_update_time_seconds),
+                repr(minimum_warn_time_seconds),
+                repr(rate_limit),
+            )
+        )
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_repr_no_bot():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+        )
+
+        assert repr(Tobias) == (
+            "TaskManager({}, {}, drop_old_data={}, "
+            "script_to_backup={}, loop_iterations={}, "
+            "minimum_update_time_seconds={}, "
+            "minimum_warn_time_seconds={})".format(
+                repr(handler.run_path),
+                repr(task_name),
+                repr(drop_old_data),
+                repr(script_to_backup),
+                repr(loop_iterations),
+                repr(minimum_update_time_seconds),
+                repr(minimum_warn_time_seconds),
+            )
+        )
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_expected_finish_time_no_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        Tobias = RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        )
+
+        assert Tobias.expected_finish_time is None
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_expected_finish_time_with_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        Tobias = RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        )
+
+        # Set a state where it took 60 seconds to process the first half of the iterations
+        time = 60
+        tolerance = 1
+        Tobias._processed_iterations = int(loop_iterations / 2)
+        ref_time = datetime.datetime.now()
+        Tobias._start_time = ref_time - datetime.timedelta(seconds=time)
+        end_time = Tobias.expected_finish_time
+
+        assert (end_time - ref_time) > datetime.timedelta(seconds=time - tolerance)
+        assert (end_time - ref_time) < datetime.timedelta(seconds=time + tolerance)
+
+        # Set a state where it took 60 seconds to process the first 10 iterations
+        time = 60
+        tolerance = 1
+        Tobias._processed_iterations = 10
+        ref_time = datetime.datetime.now()
+        Tobias._start_time = ref_time - datetime.timedelta(seconds=time)
+        end_time = Tobias.expected_finish_time
+
+        assert (end_time - ref_time) > datetime.timedelta(seconds=2 * time - tolerance)
+        assert (end_time - ref_time) < datetime.timedelta(seconds=2 * time + tolerance)
+
+        # Set a state where it took 60 seconds to process the first 20 iterations
+        time = 60
+        tolerance = 1
+        Tobias._processed_iterations = 20
+        ref_time = datetime.datetime.now()
+        Tobias._start_time = ref_time - datetime.timedelta(seconds=time)
+        end_time = Tobias.expected_finish_time
+
+        assert (end_time - ref_time) > datetime.timedelta(seconds=time / 2.0 - tolerance)
+        assert (end_time - ref_time) < datetime.timedelta(seconds=time / 2.0 + tolerance)
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_loop_tick_outside_context():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        Tobias = RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        )
+
+        try:
+            Tobias.loop_tick()
         except RuntimeError as e:
             assert str(e) == ("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_loop_tick_sets_update():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            assert not hasattr(Tobias, '_last_update')
+            Tobias.loop_tick()
+            assert hasattr(Tobias, '_last_update')
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_loop_tick_sets_processed_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            assert Tobias._processed_iterations is None
+            Tobias.loop_tick()
+            assert Tobias._processed_iterations == 1
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_loop_tick_ticks():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            assert Tobias._processed_iterations == 0
+            Tobias.loop_tick()
+            assert Tobias._processed_iterations == 1
+            Tobias.loop_tick()
+            assert Tobias._processed_iterations == 2
+            Tobias.loop_tick()
+            assert Tobias._processed_iterations == 3
+            Tobias.loop_tick(count=2)
+            assert Tobias._processed_iterations == 5
+            Tobias.loop_tick(count=2)
+            assert Tobias._processed_iterations == 7
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_loop_tick_overload():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            assert Tobias._processed_iterations == 0
+            Tobias.set_completed()
+            assert Tobias._processed_iterations == loop_iterations
+            Tobias.loop_tick()
+            assert Tobias._processed_iterations == loop_iterations + 1
+            assert hasattr(Tobias, "_supposedly_just_sent_warnings")
+            assert (
+                "The number of processed iterations has exceeded the "
+                "set number of iterations.\n  - Expected 30 "
+                "iterations;\n  - Processed 31 iterations" in Tobias._supposedly_just_sent_warnings
+            )
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_set_completed_outside_context():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        Tobias = RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        )
+
         try:
-            John.set_completed()
+            Tobias.set_completed()
         except RuntimeError as e:
             assert str(e) == ("Tried calling set_completed() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
-        with John as john:
-            assert not hasattr(john, '_last_update')
-            john.loop_tick()
-            assert hasattr(john, '_last_update')
-            assert John.processed_iterations == 1
-            john.set_completed()
-            assert John.processed_iterations == 20
-            john.loop_tick()
-            assert John.processed_iterations == 21
-            assert hasattr(john, "_supposedly_just_sent_warnings")
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_set_completed_no_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            assert Tobias._processed_iterations is None
+            Tobias.set_completed()
+            assert Tobias._processed_iterations is None
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_set_completed_with_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            assert Tobias.processed_iterations == 0
+            Tobias.set_completed()
+            assert Tobias.processed_iterations == loop_iterations
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_clean_task_directory():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            Tobias.create_run()
+
+            (Tobias.task_path / "testFile.tmp").touch()
+            (Tobias.task_path / "testDir").mkdir()
+            assert (Tobias.task_path / "testFile.tmp").is_file()
+            assert (Tobias.task_path / "testDir").is_dir()
+
+            Tobias.clean_task_directory()
+            assert not (Tobias.task_path / "testFile.tmp").is_file()
+            assert not (Tobias.task_path / "testDir").is_dir()
+            assert next(Tobias.task_path.iterdir(), None) is None
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_outside_context():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        Tobias = RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        )
+
+        try:
+            Tobias._update_status()
+        except RuntimeError as e:
+            assert str(e) == ("Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax")
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_no_bot():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            Tobias._update_status()  # Todo: What to test for in the no action situation?
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_edits_message():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._update_status()
+            assert Tobias._telegram_reporter._session["url"] == "https://api.telegram.org/bot{}/editMessageText".format(bot_token)
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_creates_status_if_not_exists():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            assert Tobias._task_status_message_id is not None
+            Tobias._task_status_message_id = None
+            Tobias._update_status()
+            assert Tobias._task_status_message_id is not None
+            assert Tobias._telegram_reporter._session["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_sets_last_update():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            assert not hasattr(Tobias, "_last_update")
+            Tobias._update_status()
+            assert hasattr(Tobias, "_last_update")
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_sends_processing_message():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._update_status()
+            assert "▶️▶️ Processing task {}".format(task_name) in Tobias._telegram_reporter._session["data"]["text"]
+            assert "{} 🍀\n".format(handler.run_name) in Tobias._telegram_reporter._session["data"]["text"]
+            assert "     Started" in Tobias._telegram_reporter._session["data"]["text"]
+            assert "Last update of this message: " in Tobias._telegram_reporter._session["data"]["text"]
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_unknown_expected_end_no_ticks():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            assert Tobias._processed_iterations is None
+            Tobias._last_update = datetime.datetime.now() - datetime.timedelta(seconds=minimum_update_time_seconds + 10)
+            Tobias._update_status()
+            assert "     Unknown expected finish time and remaining time\n\n" in Tobias._telegram_reporter._session["data"]["text"]
+            assert "out of an unknown number of iterations\n\n\n" not in Tobias._telegram_reporter._session["data"]["text"]
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_unknown_expected_end_without_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._processed_iterations = 0
+            Tobias._last_update = datetime.datetime.now() - datetime.timedelta(seconds=minimum_update_time_seconds + 10)
+            Tobias._update_status()
+            assert "     Unknown expected finish time and remaining time\n\n" in Tobias._telegram_reporter._session["data"]["text"]
+            assert "     Progress: 0 out of an unknown number of iterations\n\n\n" in Tobias._telegram_reporter._session["data"]["text"]
+
+            Tobias.loop_tick()
+            Tobias._last_update = datetime.datetime.now() - datetime.timedelta(seconds=minimum_update_time_seconds + 10)
+            Tobias._update_status()
+            assert "     Unknown expected finish time and remaining time\n\n" in Tobias._telegram_reporter._session["data"]["text"]
+            assert "     Progress: 1 out of an unknown number of iterations\n\n\n" in Tobias._telegram_reporter._session["data"]["text"]
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_unknown_expected_end_with_iterations():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._processed_iterations = 0
+            Tobias._last_update = datetime.datetime.now() - datetime.timedelta(seconds=minimum_update_time_seconds + 10)
+            Tobias._update_status()
+            assert "     Unknown expected finish time and remaining time\n\n" in Tobias._telegram_reporter._session["data"]["text"]
             assert (
-                "The number of processed iterations has exceeded the "
-                "set number of iterations.\n  - Expected 20 "
-                "iterations;\n  - Processed 21 iterations" in john._supposedly_just_sent_warnings
+                "     Progress: 0 out of {} iterations\n\n\n".format(loop_iterations) in Tobias._telegram_reporter._session["data"]["text"]
             )
 
 
-def test_fail_task_manager():
-    with PrepareRunDir(createRunInfo=False) as handler:
-        runPath = handler.run_path
-
-        try:
-            RM.TaskManager("runPath", "myTask", drop_old_data=True, script_to_backup=None)
-        except TypeError as e:
-            assert str(e) == ("The `path_to_run` must be a Path type object, received object of type <class 'str'>")
-
-        try:
-            RM.TaskManager(runPath, 2, drop_old_data=True, script_to_backup=None)
-        except TypeError as e:
-            assert str(e) == ("The `task_name` must be a str type object, received object of type <class 'int'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=2, script_to_backup=None)
-        except TypeError as e:
-            assert str(e) == ("The `drop_old_data` must be a bool type object, received object of type <class 'int'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_bot_token=20)
-        except TypeError as e:
-            assert str(e) == ("The `telegram_bot_token` must be a str type object or None, received object of type <class 'int'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_chat_id=20)
-        except TypeError as e:
-            assert str(e) == ("The `telegram_chat_id` must be a str type object or None, received object of type <class 'int'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None, loop_iterations="20")
-        except TypeError as e:
-            assert str(e) == ("The `loop_iterations` must be a int type object or None, received object of type <class 'str'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=2)
-        except TypeError as e:
-            assert str(e) == ("The `script_to_backup` must be a Path type object or None, received object of type <class 'int'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, loop_iterations="2")
-        except TypeError as e:
-            assert str(e) == ("The `loop_iterations` must be a int type object or None, received object of type <class 'str'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, minimum_update_time_seconds="2")
-        except TypeError as e:
-            assert str(e) == ("The `minimum_update_time_seconds` must be a int type object, received object of type <class 'str'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, minimum_warn_time_seconds="2")
-        except TypeError as e:
-            assert str(e) == ("The `minimum_warn_time_seconds` must be a int type object, received object of type <class 'str'>")
-
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        except RuntimeError as e:
-            assert str(e) == ("The 'path_to_run' ({}) does not look like the directory of a run...".format(runPath))
-
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_update_status_expected_end():
     with PrepareRunDir() as handler:
-        runPath = handler.run_path
-        try:
-            RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=runPath)
-        except RuntimeError as e:
-            assert str(e) == ("The 'script_to_backup', if set, must point to a file. It points to: {}".format(runPath))
-
-
-def test_task_manager_clean_task_directory():
-    with PrepareRunDir() as handler:
-        runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John.create_run()
-        John.task_path.mkdir()
-
-        (John.task_path / "testFile.tmp").touch()
-        (John.task_path / "testDir").mkdir()
-        assert (John.task_path / "testFile.tmp").is_file()
-        assert (John.task_path / "testDir").is_dir()
-
-        John.clean_task_directory()
-        assert not (John.task_path / "testFile.tmp").is_file()
-        assert not (John.task_path / "testDir").is_dir()
-        assert next(John.task_path.iterdir(), None) is None
-
-
-def test_task_manager_warn():
-    with PrepareRunDir() as handler:
-        runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-
-        warn_message = "Hello! This is a warning"
-
-        assert not hasattr(John, "_accumulated_warnings")
-        John.warn(warn_message)
-        assert hasattr(John, "_accumulated_warnings")
-        assert John._accumulated_warnings == {}
-        assert hasattr(John, "_supposedly_just_sent_warnings")
-        assert warn_message in John._supposedly_just_sent_warnings
-        assert John._supposedly_just_sent_warnings[warn_message] == 1
-
-    with PrepareRunDir() as handler:
-        from test_telegram_reporter_class import SessionReplacement
-
-        sessionHandler = SessionReplacement()
-
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
         bot_token = "bot_token"
         chat_id = "chat_id"
-        warn_time = 3600  # 1 hour wait, like this we can test that the messages are correctly accumulated
+        rate_limit = False
 
-        runPath = handler.run_path
-        John = RM.TaskManager(
-            runPath,
-            "myTask",
-            drop_old_data=True,
-            script_to_backup=None,
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
             telegram_bot_token=bot_token,
             telegram_chat_id=chat_id,
-            minimum_warn_time_seconds=warn_time,
-        )
-        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
-
-        warn_message = "Hello! This is a warning"
-
-        assert not hasattr(John, "_accumulated_warnings")
-        John.warn(warn_message)
-        assert hasattr(John, "_accumulated_warnings")
-        assert warn_message in John._accumulated_warnings
-        assert John._accumulated_warnings[warn_message] == 1
-
-        with John as john:
-            assert not hasattr(john, "_last_warn")
-            john.warn(warn_message)
-            assert hasattr(john, "_last_warn")
-            assert john._accumulated_warnings == {}
-            httpRequest = sessionHandler.json()
-            assert httpRequest["timeout"] == 1
-            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
-            assert httpRequest["data"]['chat_id'] == chat_id
-            sent_message = "Received the following warning {} times in the last {}:\n".format(2, humanize.naturaldelta(3600)) + warn_message
-            assert httpRequest["data"]['text'] == sent_message
-
-            try:
-                john.warn(2)
-            except TypeError as e:
-                assert str(e) == "The `message` must be a str type object, received object of type <class 'int'>"
-
-
-def test_task_manager_send_warnings():
-    with PrepareRunDir() as handler:
-        runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-
-        John._send_warnings()
-        assert not hasattr(John, "_accumulated_warnings")
-
-        tmpVar = {}
-        John._accumulated_warnings = copy.deepcopy(tmpVar)
-        John._send_warnings()
-        assert not hasattr(John, "_supposedly_just_sent_warnings")
-        assert John._accumulated_warnings == tmpVar
-
-        tmpVar = {"message1": 1, "message2": 2}
-        John._accumulated_warnings = copy.deepcopy(tmpVar)
-        John._send_warnings()
-        assert hasattr(John, "_supposedly_just_sent_warnings")
-        assert John._supposedly_just_sent_warnings == tmpVar
-
-    with PrepareRunDir() as handler:
-        from test_telegram_reporter_class import SessionReplacement
-
-        sessionHandler = SessionReplacement()
-
-        bot_token = "bot_token"
-        chat_id = "chat_id"
-        warn_time = 1
-
-        runPath = handler.run_path
-        John = RM.TaskManager(
-            runPath,
-            "myTask",
-            drop_old_data=True,
-            script_to_backup=None,
-            telegram_bot_token=bot_token,
-            telegram_chat_id=chat_id,
-            minimum_warn_time_seconds=warn_time,
-        )
-        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
-
-        assert not hasattr(John, "_last_warn")
-
-        tmpVar = {"test": 2}
-        John._accumulated_warnings = copy.deepcopy(tmpVar)
-        assert John._telegram_reporter is not None
-        assert John._task_status_message_id is None
-        John._send_warnings()
-        assert not hasattr(John, "_last_warn")
-
-        message1 = "message1"
-        message2 = "message2"
-        times = 10
-
-        with John as john:
-            assert John._telegram_reporter is not None
-            assert John._task_status_message_id is not None
-
-            # Test Single warning message, sent a single time
-            tmpVar = {message1: 1}
-            john._accumulated_warnings = copy.deepcopy(tmpVar)
-            john._send_warnings()
-            assert hasattr(john, "_last_warn")
-            assert not hasattr(john, "_supposedly_just_sent_warnings")
-            assert john._accumulated_warnings == {}
-            httpRequest = sessionHandler.json()
-            assert httpRequest["timeout"] == 1
-            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
-            assert httpRequest["data"]['chat_id'] == chat_id
-            assert httpRequest["data"]['text'] == message1
-
-            tmpVar = {message1: times}
-            john._accumulated_warnings = copy.deepcopy(tmpVar)
-            john._send_warnings()
-            assert john._accumulated_warnings == tmpVar
-
-            time.sleep(warn_time + 0.1)
-
-            # Test Single warning message, sent more than one time
-            tmpVar = {message1: times}
-            john._accumulated_warnings = copy.deepcopy(tmpVar)
-            john._send_warnings()
-            assert not hasattr(john, "_supposedly_just_sent_warnings")
-            assert john._accumulated_warnings == {}
-            httpRequest = sessionHandler.json()
-            assert httpRequest["timeout"] == 1
-            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
-            assert httpRequest["data"]['chat_id'] == chat_id
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias.loop_tick()
+            Tobias._last_update = datetime.datetime.now() - datetime.timedelta(seconds=minimum_update_time_seconds + 10)
+            Tobias._update_status()
+            assert "     Expected finish: " in Tobias._telegram_reporter._session["data"]["text"]
+            assert "     Remaining time: " in Tobias._telegram_reporter._session["data"]["text"]
             assert (
-                httpRequest["data"]['text']
-                == "Received the following warning {} times in the last {}:\n".format(times, humanize.naturaldelta(warn_time)) + message1
+                "     Progress: {} % ({}/{})\n\n\n".format(
+                    int(Tobias.processed_iterations / loop_iterations * 100), int(Tobias.processed_iterations), int(loop_iterations)
+                )
+                in Tobias._telegram_reporter._session["data"]["text"]
             )
 
-            time.sleep(warn_time + 0.1)
-
-            # Test multiple warning messages
-            tmpVar = {message1: times, message2: 1}
-            john._accumulated_warnings = copy.deepcopy(tmpVar)
-            john._send_warnings()
-            assert not hasattr(john, "_supposedly_just_sent_warnings")
-            assert john._accumulated_warnings == {}
-            httpRequest = sessionHandler.json()
-            assert httpRequest["timeout"] == 1
-            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
-            assert httpRequest["data"]['chat_id'] == chat_id
-            message_sent = "Several warnings received in the last {}\n".format(humanize.naturaldelta(warn_time))
-            for msg, count in tmpVar.items():
-                message_sent += "\n----------------------------------\n"
-                if count > 1:
-                    message_sent += "Received the following warning {} times:\n".format(count)
-                message_sent += msg
-            assert httpRequest["data"]['text'] == message_sent
+            Tobias.loop_tick()
+            Tobias.loop_tick()
+            Tobias.loop_tick()
+            Tobias._last_update = datetime.datetime.now() - datetime.timedelta(seconds=minimum_update_time_seconds + 10)
+            Tobias._update_status()
+            assert "     Expected finish: " in Tobias._telegram_reporter._session["data"]["text"]
+            assert "     Remaining time: " in Tobias._telegram_reporter._session["data"]["text"]
+            assert (
+                "     Progress: {} % ({}/{})\n\n\n".format(
+                    int(Tobias.processed_iterations / loop_iterations * 100), int(Tobias.processed_iterations), int(loop_iterations)
+                )
+                in Tobias._telegram_reporter._session["data"]["text"]
+            )
 
 
-def test_task_manager_with():
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_enter_double_entry():
     with PrepareRunDir() as handler:
-        from test_telegram_reporter_class import SessionReplacement
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
 
-        sessionHandler = SessionReplacement()
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
 
-        runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John.create_run()
-
-        assert not hasattr(John, "_start_time")
-        assert John._task_status_message_id is None
-        with John as john:
-            (john.task_path / "task_file.txt").touch()
-            assert hasattr(John, "_start_time")
-        assert (John.task_path / "task_report.txt").is_file()  # Test the __exit__ is correctly creating the report file
-
-        with open(John.task_path / "task_report.txt") as report_file:
-            first_line = report_file.readline()
-            assert first_line == "task_status: no errors\n"  # Test that the content of the report file is correct
+        with Tobias:
+            pass
 
         try:
-            with John as john:  # Test __enter__ not allowing to reuse a TaskManager
-                pass  # pragma: no cover
+            with Tobias:
+                pass
         except RuntimeError as e:
-            assert str(e) == ("Once a task has processed its data, it can not be processed again. Use a new task")
+            assert str(e) == "Once a task has processed its data, it can not be processed again. Use a new task"
 
-        John2 = RM.TaskManager(runPath, "myTask", drop_old_data=False, script_to_backup=None)
-        John2.create_run()
-        with John2 as john:
-            assert (john.task_path / "task_file.txt").is_file()  # Test __enter__ does not delete old files if not asked to
+
+@pytest.mark.parametrize("drop_old_data", testdata_true_false)
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_enter_cleans_directory(drop_old_data: bool):
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        Tobias.task_path.mkdir()
+        (Tobias.task_path / "testFile.tmp").touch()
+        (Tobias.task_path / "testDir").mkdir()
+        assert (Tobias.task_path / "testFile.tmp").is_file()
+        assert (Tobias.task_path / "testDir").is_dir()
+
+        with Tobias as tobias:
+            assert (tobias.task_path / "testFile.tmp").is_file() != drop_old_data
+            assert (tobias.task_path / "testDir").is_dir() != drop_old_data
+
+
+@pytest.mark.parametrize("own_run_context", testdata_true_false)
+@pytest.mark.parametrize("create_bot", testdata_true_false)
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_enter_creates_run_context(own_run_context: bool, create_bot: bool):
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        if create_bot:
+            bot_token = "bot_token"
+            chat_id = "chat_id"
+            rate_limit = False
+        else:
+            bot_token = None
+            chat_id = None
+            rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+        if not own_run_context:
+            Tobias._in_run_context = True
+
+        with Tobias as tobias:
+            assert tobias._own_run_context == own_run_context
+            if own_run_context and create_bot:
+                assert isinstance(tobias._telegram_reporter, RM.TelegramReporter)
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_enter_creates_task_context():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        with Tobias as tobias:
+            assert tobias._in_task_context
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_enter_creates_start_time():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        assert not hasattr(Tobias, "_start_time")
+
+        with Tobias as tobias:
+            assert isinstance(tobias._start_time, datetime.datetime)
+
+
+@pytest.mark.parametrize("with_loop_iterations", testdata_true_false)
+@pytest.mark.parametrize("create_bot", testdata_true_false)
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_enter_creates_status_message(with_loop_iterations: bool, create_bot: bool):
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        if with_loop_iterations:
+            loop_iterations = 30
+        else:
+            loop_iterations = None
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        if create_bot:
+            bot_token = "bot_token"
+            chat_id = "chat_id"
+            rate_limit = False
+        else:
+            bot_token = None
+            chat_id = None
+            rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        assert Tobias._task_status_message_id is None
+
+        with Tobias as tobias:
+            if create_bot:  # TODO: What if there is no bot... what should we test?
+                assert tobias._task_status_message_id is not None
+                assert "Started processing task" in tobias._telegram_reporter._session["data"]["text"]
+                if with_loop_iterations:
+                    assert ".\nIt has " in tobias._telegram_reporter._session["data"]["text"]
+                else:
+                    assert ".\nIt has " not in tobias._telegram_reporter._session["data"]["text"]
+                assert "\nAn update should come soon" in tobias._telegram_reporter._session["data"]["text"]
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_sets_processed_flag():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+        assert not hasattr(Tobias, "_already_processed")
+
+        with Tobias as tobias:
+            assert not hasattr(tobias, "_already_processed")
+        assert Tobias._already_processed
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_ends_task_context():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+        assert not Tobias._in_task_context
+
+        with Tobias as tobias:
+            assert tobias._in_task_context
+        assert not Tobias._in_task_context
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_creates_task_report():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        with Tobias as tobias:
+            assert not (tobias.task_path / "task_report.txt").is_file()
+        assert (Tobias.task_path / "task_report.txt").is_file()
+
+
+testdata_task_end_types = [("no errors"), ("incomplete"), ("errors")]
+
+
+@pytest.mark.parametrize("task_end_type", testdata_task_end_types)
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_task_report_content(task_end_type: str):
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = None
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
 
         try:
-            John3 = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=Path(traceback.extract_stack()[-1].filename))
-            John3.create_run()
-            with John3 as john:
-                assert not (john.task_path / "task_file.txt").is_file()  # Test __enter__ does delete old files when asked to
-                raise RuntimeError(
-                    "This is to test the TaskManager error handling"
-                )  # Create an artificial error to trigger the report file to have error content in it
-        except RuntimeError as e:
-            assert str(e) == "This is to test the TaskManager error handling"
-        with open(John3.task_path / "task_report.txt") as report_file:
+            with Tobias as tobias:
+                if task_end_type == "errors":
+                    raise Exception("Just to get out")
+                elif task_end_type == "incomplete":
+                    tobias.loop_tick()
+                    tobias.loop_tick()
+                    tobias.loop_tick()
+                else:  # elif task_end_type == "no errors"
+                    tobias.set_completed()
+        except Exception:
+            pass
+
+        with open(Tobias.task_path / "task_report.txt", "r", encoding="utf8") as report_file:
             first_line = report_file.readline()
-            assert first_line == "task_status: there were errors\n"  # Test that the content of the report file is correct
+            if task_end_type == "errors":
+                assert first_line == "task_status: there were errors\n"  # Test that the content of the report file is correct
+            elif task_end_type == "incomplete":
+                assert first_line == "task_status: incomplete\n"  # Test that the content of the report file is correct
+            else:  # elif task_end_type == "no errors"
+                assert first_line == "task_status: no errors\n"  # Test that the content of the report file is correct
 
-        assert (
-            John3.task_path / "backup.{}".format(Path(traceback.extract_stack()[-1].filename).parts[-1])
-        ).is_file()  # Test script backing up
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_backup_file_does_not_exist():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
 
         try:
-            John4 = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=Path(traceback.extract_stack()[-1].filename))
-            John4.create_run()
-            with John4 as john:
-                John4._script_to_backup = runPath
+            with RM.TaskManager(
+                handler.run_path,
+                task_name,
+                drop_old_data=drop_old_data,
+                script_to_backup=script_to_backup,
+                loop_iterations=loop_iterations,
+                minimum_update_time_seconds=minimum_update_time_seconds,
+                minimum_warn_time_seconds=minimum_warn_time_seconds,
+                telegram_bot_token=bot_token,
+                telegram_chat_id=chat_id,
+                rate_limit=rate_limit,
+            ) as Tobias:
+                Tobias._script_to_backup = handler.run_path
         except RuntimeError as e:
             assert str(e) == "Somehow you are trying to backup a file that does not exist"
 
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_backup_file_created():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
         bot_token = "bot_token"
         chat_id = "chat_id"
-        loops = 20
+        rate_limit = False
 
-        David = RM.TaskManager(
-            runPath,
-            "otherTaskWithReporting",
-            drop_old_data=True,
-            script_to_backup=None,
-            loop_iterations=None,
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
             telegram_bot_token=bot_token,
             telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
         )
-        David._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
-        David.create_run()
 
-        assert not hasattr(David, "_start_time")
-        assert David._task_status_message_id is None
-        with David as david:
-            (david.task_path / "task_file.txt").touch()
-            assert hasattr(david, "_start_time")
-            assert david._task_status_message_id is not None
-            httpRequest = sessionHandler.json()
-            assert httpRequest["timeout"] == 1
-            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
-            assert httpRequest["data"]['chat_id'] == chat_id
-            sent_message = "Started processing task {} of run {}.\nAn update should come soon".format(david.task_name, handler.run_name)
-            assert httpRequest["data"]['text'] == sent_message
-        assert (David.task_path / "task_report.txt").is_file()  # Test the __exit__ is correctly creating the report file
+        with Tobias:
+            pass
 
-        David = RM.TaskManager(
-            runPath,
-            "otherTaskWithReporting",
-            drop_old_data=True,
-            script_to_backup=None,
-            loop_iterations=loops,
+        assert (Tobias.task_path / "backup.{}".format(Path(traceback.extract_stack()[-1].filename).parts[-1])).is_file()
+
+
+@pytest.mark.parametrize("own_run_context", testdata_true_false)
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_exit_sets_run_context(own_run_context: bool):
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
             telegram_bot_token=bot_token,
             telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
         )
-        David._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
-        David.create_run()
+        if not own_run_context:
+            Tobias._in_run_context = True
 
-        assert not hasattr(David, "_start_time")
-        assert David._task_status_message_id is None
-        with David as david:
-            (david.task_path / "task_file.txt").touch()
-            assert hasattr(david, "_start_time")
-            assert david._task_status_message_id is not None
-            httpRequest = sessionHandler.json()
-            assert httpRequest["timeout"] == 1
-            assert httpRequest["url"] == "https://api.telegram.org/bot{}/sendMessage".format(bot_token)
-            assert httpRequest["data"]['chat_id'] == chat_id
-            sent_message = "Started processing task {} of run {}.\nIt has {} iterations.\nAn update should come soon".format(
-                david.task_name, handler.run_name, loops
+        with Tobias as tobias:
+            assert tobias._own_run_context == own_run_context
+
+            assert tobias._in_run_context
+
+        assert tobias._in_run_context != own_run_context
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_warn_bad_type_message():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        try:
+            Tobias.warn(2)
+        except TypeError as e:
+            assert str(e) == "The `message` must be a str type object, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_warn_creates_accumulated_warnings():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        assert not hasattr(Tobias, "_accumulated_warnings")
+
+        Tobias.warn("Test warn")
+
+        assert hasattr(Tobias, "_accumulated_warnings")
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_warn_already_has_accumulated_warnings():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        assert not hasattr(Tobias, "_accumulated_warnings")
+        Tobias._accumulated_warnings = {}
+        assert hasattr(Tobias, "_accumulated_warnings")
+
+        Tobias.warn("Test warn")
+
+        assert hasattr(Tobias, "_accumulated_warnings")
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_warn_accumulates_warnings():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        test_warning1 = "Test warn"
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._last_warn = datetime.datetime.now()
+
+            Tobias.warn(test_warning1)
+            assert hasattr(Tobias, "_accumulated_warnings")
+            assert test_warning1 in Tobias._accumulated_warnings
+            assert Tobias._accumulated_warnings[test_warning1] == 1
+
+            Tobias.warn(test_warning1)
+            assert Tobias._accumulated_warnings[test_warning1] == 2
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_returns_no_accumulated_warnings():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        assert not hasattr(Tobias, "_accumulated_warnings")
+
+        Tobias._send_warnings()  # TODO: is there a better way to test a return with no change of state?
+
+        assert not hasattr(Tobias, "_accumulated_warnings")
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_no_bot_creates_warn_backup():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = None
+        chat_id = None
+        rate_limit = False
+
+        accumulated_warnings = {"This is message 1": 1, "This message was repeated": 2}
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        )
+
+        Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
+
+        Tobias._send_warnings()
+
+        assert Tobias._supposedly_just_sent_warnings == accumulated_warnings
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_without_task_status_message_id():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        accumulated_warnings = {"This is message 1": 1, "This message was repeated": 2}
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
+            Tobias._telegram_reporter._session._clear()
+            Tobias._task_status_message_id = None
+            Tobias._last_warn = datetime.datetime.now() - datetime.timedelta(seconds=minimum_warn_time_seconds + 10)
+            Tobias._send_warnings()
+
+            assert Tobias._telegram_reporter._session._params == {}  # Test that no message was sent
+            # TODO: is there a better way to test no effect?
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_sets_last_warn():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        accumulated_warnings = {"This is message 1": 1, "This message was repeated": 2}
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            assert not hasattr(Tobias, "_last_warn")
+            Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
+
+            Tobias._send_warnings()
+
+            assert Tobias._last_warn is not None
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_not_enough_time():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        accumulated_warnings = {"This is message 1": 1, "This message was repeated": 2}
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._last_warn = datetime.datetime.now()
+            Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
+
+            Tobias._send_warnings()
+
+            assert Tobias._accumulated_warnings == accumulated_warnings
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_single_warning():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        message1 = "This is message 1"
+        # message2 = "This message was repeated"
+        accumulated_warnings = {
+            message1: 1,
+            # message2: 2
+        }
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._last_warn = datetime.datetime.now() - datetime.timedelta(seconds=minimum_warn_time_seconds + 10)
+            Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
+
+            Tobias._send_warnings()
+
+            assert Tobias._telegram_reporter._session["data"]["text"] == message1
+            assert Tobias._accumulated_warnings == {}
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_single_warning_repeated():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+
+        message1 = "This is message 1"
+        repeats = 2
+        # message2 = "This message was repeated"
+        accumulated_warnings = {
+            message1: repeats,
+            # message2: 2
+        }
+
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_token=bot_token,
+            telegram_chat_id=chat_id,
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._last_warn = datetime.datetime.now() - datetime.timedelta(seconds=minimum_warn_time_seconds + 10)
+            Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
+
+            Tobias._send_warnings()
+
+            assert message1 in Tobias._telegram_reporter._session["data"]["text"]
+            assert (
+                "Received the following warning {} times in the last {}:\n".format(
+                    repeats, humanize.naturaldelta(minimum_warn_time_seconds)
+                )
+                in Tobias._telegram_reporter._session["data"]["text"]
             )
-            assert httpRequest["data"]['text'] == sent_message
-        assert (David.task_path / "task_report.txt").is_file()  # Test the __exit__ is correctly creating the report file
+            assert Tobias._accumulated_warnings == {}
 
 
-def test_task_manager_repr():
-    from test_telegram_reporter_class import SessionReplacement
-
-    sessionHandler = SessionReplacement()
-
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_send_warnings_multiple_warnings():
     with PrepareRunDir() as handler:
-        runPath = handler.run_path
+        task_name = "testTask"
+        script_to_backup = Path(traceback.extract_stack()[-1].filename)
+        drop_old_data = True
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
         bot_token = "bot_token"
         chat_id = "chat_id"
+        rate_limit = False
 
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        assert repr(John) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={})".format(
-            repr(runPath), repr("myTask"), repr(True), repr(None)
-        )
+        message1 = "This is message 1"
+        repeats = 2
+        message2 = "This message was repeated"
+        accumulated_warnings = {message1: 1, message2: repeats}
 
-        John = RM.TaskManager(
-            runPath, "myTask", drop_old_data=True, script_to_backup=None, telegram_bot_token=bot_token, telegram_chat_id=chat_id
-        )
-        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
-        assert repr(
-            John
-        ) == "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, telegram_bot_token={}, telegram_chat_id={})".format(
-            repr(runPath), repr("myTask"), repr(True), repr(None), repr(bot_token), repr(chat_id)
-        )
-
-
-def test_task_manager_expected_finish_time():
-    with PrepareRunDir() as handler:
-        runPath = handler.run_path
-
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        assert John.expected_finish_time is None
-
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John._loop_iterations = 20
-        John._processed_iterations = 3
-        assert John.expected_finish_time is None
-
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John._loop_iterations = 20
-        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
-        assert John.expected_finish_time is None
-
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John._processed_iterations = 3
-        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
-        assert John.expected_finish_time is None
-
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John._loop_iterations = 20
-        John._processed_iterations = 3
-        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
-        assert John.expected_finish_time is not None
-        assert John.expected_finish_time > datetime.datetime.now()
-
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-        John._loop_iterations = 20
-        with John as john:
-            john.loop_tick()
-        John._start_time = datetime.datetime.now() - datetime.timedelta(seconds=100)
-        assert John.expected_finish_time is not None
-        assert John.expected_finish_time > datetime.datetime.now()
-
-
-def test_task_manager_update_status():
-    with PrepareRunDir() as handler:
-        runPath = handler.run_path
-        John = RM.TaskManager(runPath, "myTask", drop_old_data=True, script_to_backup=None)
-
-        try:
-            John._update_status()
-        except RuntimeError as e:
-            assert str(e) == "Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax"
-
-    with PrepareRunDir() as handler:
-        from test_telegram_reporter_class import SessionReplacement
-
-        sessionHandler = SessionReplacement()
-
-        bot_token = "bot_token"
-        chat_id = "chat_id"
-        update_time = 1
-
-        runPath = handler.run_path
-        John = RM.TaskManager(
-            runPath,
-            "myTask",
-            drop_old_data=True,
-            script_to_backup=None,
+        with RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
             telegram_bot_token=bot_token,
             telegram_chat_id=chat_id,
-            minimum_update_time_seconds=update_time,
-        )
-        John._telegram_reporter._session = sessionHandler  # To avoid sending actual http requests
+            rate_limit=rate_limit,
+        ) as Tobias:
+            Tobias._last_warn = datetime.datetime.now() - datetime.timedelta(seconds=minimum_warn_time_seconds + 10)
+            Tobias._accumulated_warnings = copy.deepcopy(accumulated_warnings)
 
-        assert not hasattr(John, "_last_update")
-        assert John._telegram_reporter is not None
-        assert John._task_status_message_id is None
+            Tobias._send_warnings()
 
-        try:
-            John._update_status()
-        except RuntimeError as e:
-            assert str(e) == "Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax"
-
-        with John as john:
-            assert john._telegram_reporter is not None
-            assert john._task_status_message_id is not None
-
-            john._update_status()
-            assert hasattr(john, "_last_update")
-            httpRequest = sessionHandler.json()
-            assert "▶️▶️ Processing task" in httpRequest["data"]['text']
-            assert "Unknown expected" in httpRequest["data"]['text']
-            assert "Progress:" not in httpRequest["data"]['text']
-            assert "Last update of this message" in httpRequest["data"]['text']
-
-            last_update = copy.deepcopy(john._last_update)
-            john._update_status()
-            assert john._last_update == last_update
-
-            john._task_status_message_id = None
-            john._processed_iterations = 2
-            john._update_status()
-            assert hasattr(john, "_last_update")
-            assert john._task_status_message_id is not None
-            httpRequest = sessionHandler.json()
-            assert "▶️▶️ Processing task" in httpRequest["data"]['text']
-            assert "Unknown expected" in httpRequest["data"]['text']
-            assert "Progress:" in httpRequest["data"]['text']
-            assert "Last update of this message" in httpRequest["data"]['text']
-
-            john._task_status_message_id = None
-            john._loop_iterations = 20
-            john._processed_iterations = 2
-            john._update_status()
-            assert hasattr(john, "_last_update")
-            assert john._task_status_message_id is not None
-            httpRequest = sessionHandler.json()
-            assert "▶️▶️ Processing task" in httpRequest["data"]['text']
-            assert "Expected finish:" in httpRequest["data"]['text']
-            assert "(3/20)" in httpRequest["data"]['text']
-            assert "Last update of this message" in httpRequest["data"]['text']
-
-            # Just to get full coverage even though we are not really testing anything here apart from the lack of a crash
-            tmp = john._telegram_reporter
-            john._telegram_reporter = None
-            john._update_status()
-            john._telegram_reporter = tmp
+            assert (
+                "Several warnings received in the last {}\n".format(humanize.naturaldelta(minimum_warn_time_seconds))
+                in Tobias._telegram_reporter._session["data"]["text"]
+            )
+            assert "Received the following warning {} times:\n".format(1) not in Tobias._telegram_reporter._session["data"]["text"]
+            assert "Received the following warning {} times:\n".format(repeats) in Tobias._telegram_reporter._session["data"]["text"]
+            assert message1 in Tobias._telegram_reporter._session["data"]["text"]
+            assert message2 in Tobias._telegram_reporter._session["data"]["text"]
+            assert Tobias._accumulated_warnings == {}
