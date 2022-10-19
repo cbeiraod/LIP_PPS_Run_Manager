@@ -13,6 +13,7 @@ include .readthedocs.yml
 include .travis.yml
 include pytest.ini
 include tox.ini
+include pyproject.toml
 
 include AUTHORS.rst
 include CHANGELOG.rst
