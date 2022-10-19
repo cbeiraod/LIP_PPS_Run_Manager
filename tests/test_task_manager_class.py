@@ -80,6 +80,7 @@ def test_init_bad_type_path():
     try:
         task_name = "testTask"
         RM.TaskManager("/bad/path", task_name, drop_old_data=True, script_to_backup=None)
+        raise Exception("Passed through a fail condition without failing")  # pragma: no cover
     except TypeError as e:
         assert str(e) == "The `path_to_run` must be a Path type object, received object of type <class 'str'>"
 
@@ -91,6 +92,7 @@ def test_init_bad_type_name():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `task_name` must be a str type object, received object of type <class 'int'>"
 
@@ -102,6 +104,7 @@ def test_init_bad_type_drop_old_data():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=1, script_to_backup=None)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `drop_old_data` must be a bool type object, received object of type <class 'int'>"
 
@@ -113,6 +116,7 @@ def test_init_bad_type_script_to_backup():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=1)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `script_to_backup` must be a Path type object or None, received object of type <class 'int'>"
 
@@ -124,6 +128,7 @@ def test_init_bad_type_telegram_bot_token():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, telegram_bot_token=2)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `telegram_bot_token` must be a str type object or None, received object of type <class 'int'>"
 
@@ -135,6 +140,7 @@ def test_init_bad_type_telegram_chat_id():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, telegram_chat_id=2)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `telegram_chat_id` must be a str type object or None, received object of type <class 'int'>"
 
@@ -146,6 +152,7 @@ def test_init_bad_type_loop_iterations():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, loop_iterations="2")
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `loop_iterations` must be a int type object or None, received object of type <class 'str'>"
 
@@ -157,6 +164,7 @@ def test_init_bad_type_minimum_update_time_seconds():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, minimum_update_time_seconds="2")
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `minimum_update_time_seconds` must be a int type object, received object of type <class 'str'>"
 
@@ -168,6 +176,7 @@ def test_init_bad_type_minimum_warn_time_seconds():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None, minimum_warn_time_seconds="2")
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `minimum_warn_time_seconds` must be a int type object, received object of type <class 'str'>"
 
@@ -179,6 +188,7 @@ def test_init_bad_run_directory():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=None)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == "The 'path_to_run' ({}) does not look like the directory of a run...".format(handler.run_path)
 
@@ -190,6 +200,7 @@ def test_init_no_script_to_backup():
 
         try:
             RM.TaskManager(handler.run_path, task_name, drop_old_data=True, script_to_backup=handler.run_path)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == "The 'script_to_backup', if set, must point to a file. It points to: {}".format(handler.run_path)
 
@@ -368,6 +379,7 @@ def test_loop_tick_outside_context():
 
         try:
             Tobias.loop_tick()
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == ("Tried calling loop_tick() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
@@ -466,6 +478,7 @@ def test_set_completed_outside_context():
 
         try:
             Tobias.set_completed()
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == ("Tried calling set_completed() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
@@ -540,6 +553,7 @@ def test_update_status_outside_context():
 
         try:
             Tobias._update_status()
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == ("Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax")
 
@@ -868,7 +882,8 @@ def test_enter_double_entry():
 
         try:
             with Tobias:
-                pass
+                pass  # pragma: no cover
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == "Once a task has processed its data, it can not be processed again. Use a new task"
 
@@ -1237,6 +1252,7 @@ def test_exit_backup_file_does_not_exist():
                 rate_limit=rate_limit,
             ) as Tobias:
                 Tobias._script_to_backup = handler.run_path
+                raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except RuntimeError as e:
             assert str(e) == "Somehow you are trying to backup a file that does not exist"
 
@@ -1338,6 +1354,7 @@ def test_warn_bad_type_message():
 
         try:
             Tobias.warn(2)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
             assert str(e) == "The `message` must be a str type object, received object of type <class 'int'>"
 
