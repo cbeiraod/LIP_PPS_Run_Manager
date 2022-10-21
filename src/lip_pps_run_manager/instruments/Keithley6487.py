@@ -10,12 +10,13 @@ class Keithley6487:
     def set_voltage(self, voltage: float):
         pass
 
-    def get_voltage(
-        self,
-    ) -> float:
+    def get_voltage(self) -> float:
         pass
 
     def get_current(self) -> float:
+        pass
+
+    def get_cv(self) -> float:
         pass
 
     def set_current_range(self, limit: float) -> bool:
@@ -24,20 +25,14 @@ class Keithley6487:
     def set_voltage_range(self, limit: float) -> bool:
         pass
 
-    def voltage_on(
-        self,
-    ) -> bool:
+    def voltage_on(self) -> bool:
         pass
 
-    def voltage_off(
-        self,
-    ) -> bool:
+    def voltage_off(self) -> bool:
         pass
 
     def set_source_current_limit(self, limit: float) -> bool:
         pass
 
-    def safe_shutdowm(
-        self,
-    ):
+    def safe_shutdowm(self):
         pass
