@@ -4,7 +4,13 @@ from lip_pps_run_manager.instruments import functions
 
 
 class ReplaceResourceManager:
-    pass
+    def __init__(self):
+        pass
+
+    def open_resource(self, string):
+        self._resource_string = string
+
+        return self
 
 
 @patch('pyvisa.ResourceManager', new=ReplaceResourceManager)  # To avoid sending actual VISA requests

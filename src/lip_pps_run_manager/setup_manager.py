@@ -12,6 +12,24 @@ class DeviceBase:
         raise RuntimeError("The device type {} has not had its safe shutdown set...".format(self._type))
 
 
+class VISADevice(DeviceBase):
+    """This is the base class for implementing a device for an experimental setup which communicates with the VISA interface"""
+
+    _VISA_ResourceManager = None
+    _VISA_Handle = None
+    _resource_string = None
+
+    def __init__(self, device_type: str, device_name: str, resource_string: str):
+        super().__init__(device_name=device_name, device_type=device_type)
+        self._resource_string = resource_string
+
+        from .instruments import get_VISA_ResourceManager
+
+        self._VISA_ResourceManager = get_VISA_ResourceManager()
+
+        self._VISA_Handle = self._VISA_ResourceManager.open_resource(resource_string)
+
+
 class SetupManager:
     """This class holds details about the experimental setup (particularly useful for device configuration)"""
 

@@ -1,19 +1,13 @@
-from lip_pps_run_manager.setup_manager import DeviceBase
-
-from . import get_VISA_ResourceManager
+from lip_pps_run_manager.setup_manager import VISADevice
 
 
-class Keithley6487(DeviceBase):
+class Keithley6487(VISADevice):
     """
     Class for the keithley 6487 PicoAmmeter
     """
 
-    _VISA_ResourceManager = None
-
-    def __init__(self, device_name: str):
-        super().__init__(device_name=device_name, device_type="Keithley6487")
-
-        self._VISA_ResourceManager = get_VISA_ResourceManager()
+    def __init__(self, device_name: str, resource_string: str):
+        super().__init__(device_type="Keithley6487", device_name=device_name, resource_string=resource_string)
 
     def set_voltage(self, voltage: float):
         pass
