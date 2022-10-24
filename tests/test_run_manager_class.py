@@ -14,6 +14,21 @@ def ensure_clean(path: Path):  # pragma: no cover
         shutil.rmtree(path)
 
 
+def prepare_config_file(bot_name, bot_token, chat_name, chat_id):  # pragma: no cover
+    config_file = Path.cwd() / "run_manager_telegram_config.json"
+    with config_file.open("w", encoding="utf-8") as file:
+        file.write("{\n")
+        file.write('  "bots": {\n')
+        file.write('    "{}": "{}"\n'.format(bot_name, bot_token))
+        file.write("  },\n")
+        file.write('  "chats": {\n')
+        file.write('    "{}": "{}"\n'.format(chat_name, chat_id))
+        file.write("  }\n")
+        file.write("}\n")
+
+    return config_file
+
+
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_init_no_bot():
     tmpdir = tempfile.gettempdir()
@@ -32,7 +47,7 @@ def test_init_no_bot():
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
-def test_init_with_bot():
+def test_init_with_bot_ids():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
     bot_token = "bot_token"
@@ -46,6 +61,79 @@ def test_init_with_bot():
     assert John._bot_token == bot_token
     assert John._chat_id == chat_id
     assert John._rate_limit == rate_limit
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_with_bot_names():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    bot_name = "bot_name"
+    chat_name = "chat_name"
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    rate_limit = False
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    config_file = prepare_config_file(bot_name, bot_token, chat_name, chat_id)
+
+    John = RM.RunManager(runPath, telegram_bot_name=bot_name, telegram_chat_name=chat_name, rate_limit=rate_limit)
+
+    assert John._bot_name == bot_name
+    assert John._chat_name == chat_name
+    assert John._rate_limit == rate_limit
+    assert John._bot_token == bot_token
+    assert John._chat_id == chat_id
+
+    config_file.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_with_only_bot_name():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    bot_name = "bot_name"
+    chat_name = "chat_name"
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    rate_limit = False
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    config_file = prepare_config_file(bot_name, bot_token, chat_name, chat_id)
+
+    John = RM.RunManager(runPath, telegram_bot_name=bot_name, telegram_chat_id=chat_id, rate_limit=rate_limit)
+
+    assert John._bot_name == bot_name
+    assert John._rate_limit == rate_limit
+    assert John._bot_token == bot_token
+    assert John._chat_id == chat_id
+
+    config_file.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_with_only_chat_name():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    bot_name = "bot_name"
+    chat_name = "chat_name"
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    rate_limit = False
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    config_file = prepare_config_file(bot_name, bot_token, chat_name, chat_id)
+
+    John = RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_name=chat_name, rate_limit=rate_limit)
+
+    assert John._chat_name == chat_name
+    assert John._rate_limit == rate_limit
+    assert John._bot_token == bot_token
+    assert John._chat_id == chat_id
+
+    config_file.unlink()
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
@@ -80,6 +168,34 @@ def test_init_bad_type_path():
         raise Exception("Passed through a fail condition without failing")  # pragma: no cover
     except TypeError as e:
         assert str(e) == "The `path_to_run_directory` must be a Path type object, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_bot_name():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    try:
+        RM.RunManager(runPath, telegram_bot_name=2)
+        raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+    except TypeError as e:
+        assert str(e) == "The `telegram_bot_name` must be a str type object or None, received object of type <class 'int'>"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_init_bad_type_chat_name():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    try:
+        RM.RunManager(runPath, telegram_chat_name=2)
+        raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+    except TypeError as e:
+        assert str(e) == "The `telegram_chat_name` must be a str type object or None, received object of type <class 'int'>"
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
@@ -137,7 +253,7 @@ def test_repr_no_bot():
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
-def test_repr_with_bot():
+def test_repr_with_bot_ids():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
     bot_token = "bot_token"
@@ -151,6 +267,29 @@ def test_repr_with_bot():
     assert repr(John) == "RunManager({}, telegram_bot_token={}, telegram_chat_id={}, rate_limit={})".format(
         repr(runPath), repr(bot_token), repr(chat_id), repr(rate_limit)
     )
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_repr_with_bot_names():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    bot_name = "bot_name"
+    chat_name = "chat_name"
+    bot_token = "bot_token"
+    chat_id = "chat_id"
+    rate_limit = False
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    config_file = prepare_config_file(bot_name, bot_token, chat_name, chat_id)
+
+    John = RM.RunManager(runPath, telegram_bot_name=bot_name, telegram_chat_name=chat_name, rate_limit=rate_limit)
+
+    assert repr(John) == "RunManager({}, telegram_bot_name={}, telegram_chat_name={}, rate_limit={})".format(
+        repr(runPath), repr(bot_name), repr(chat_name), repr(rate_limit)
+    )
+
+    config_file.unlink()
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests

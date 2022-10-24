@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import humanize
 import pytest
+from test_run_manager_class import prepare_config_file
 from test_telegram_reporter_class import SessionReplacement
 
 import lip_pps_run_manager as RM
@@ -223,7 +224,7 @@ def test_init_loop_iterations():
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
-def test_repr_with_bot():
+def test_repr_with_bot_ids():
     with PrepareRunDir() as handler:
         task_name = "testTask"
         drop_old_data = True
@@ -266,6 +267,57 @@ def test_repr_with_bot():
                 repr(rate_limit),
             )
         )
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_repr_with_bot_names():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = 30
+        minimum_update_time_seconds = 60
+        minimum_warn_time_seconds = 60
+        bot_name = "bot_name"
+        chat_name = "chat_name"
+        bot_token = "bot_token"
+        chat_id = "chat_id"
+        rate_limit = False
+        config_file = prepare_config_file(bot_name, bot_token, chat_name, chat_id)
+
+        Tobias = RM.TaskManager(
+            handler.run_path,
+            task_name,
+            drop_old_data=drop_old_data,
+            script_to_backup=script_to_backup,
+            loop_iterations=loop_iterations,
+            minimum_update_time_seconds=minimum_update_time_seconds,
+            minimum_warn_time_seconds=minimum_warn_time_seconds,
+            telegram_bot_name=bot_name,
+            telegram_chat_name=chat_name,
+            rate_limit=rate_limit,
+        )
+
+        assert repr(Tobias) == (
+            "TaskManager({}, {}, drop_old_data={}, "
+            "script_to_backup={}, telegram_bot_name={}, "
+            "telegram_chat_name={}, loop_iterations={}, "
+            "minimum_update_time_seconds={}, "
+            "minimum_warn_time_seconds={}, rate_limit={})".format(
+                repr(handler.run_path),
+                repr(task_name),
+                repr(drop_old_data),
+                repr(script_to_backup),
+                repr(bot_name),
+                repr(chat_name),
+                repr(loop_iterations),
+                repr(minimum_update_time_seconds),
+                repr(minimum_warn_time_seconds),
+                repr(rate_limit),
+            )
+        )
+
+        config_file.unlink()
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
