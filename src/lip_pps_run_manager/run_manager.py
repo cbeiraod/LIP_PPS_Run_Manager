@@ -200,6 +200,20 @@ class RunManager:
 
     This Class initializes the on disk structures if necessary.
 
+    When using a telegram bot, it is possible to use a configuration
+    file to load the secret bot token or/and the unique chat id. Named
+    strings are used to identify these quantities, see the example
+    config file for the syntax. If the `telegram_bot_name` parameter is
+    passed, the `telegram_bot_token` is ignored since it takes
+    precedence. The `telegram_chat_name` also takes precedence over the
+    `telegram_chat_id`. This helps keep these values secret when using
+    the option to automatically back up scripts for each task.
+
+    A default config file should be placed in the home directory and
+    have the name '.run_manager_telegram_config.json'. A specific config
+    file should be placed in the current running directory and have the
+    name 'run_manager_telegram_config.json'
+
     Parameters
     ----------
     path_to_run_directory
@@ -207,6 +221,18 @@ class RunManager:
         is stored. Typically, there will be multiple processing
         steps/tasks applied to a single run and each will have its data
         stored in a single subdirectory.
+    telegram_bot_name
+        The bot name of the bot to be used to publish the report message
+        to telegram. This property takes precedence over
+        `telegram_bot_token`, which will be ignored if this parameter is
+        passed. A config file should exist with the bot configuration,
+        see the example.
+    telegram_chat_name
+        The chat name of the chat to publish the report messages to
+        telegram. This property takes precedence over
+        `telegram_chat_id`, which will be ignored if this parameter is
+        passed. A config file should exist with the chat configuration,
+        see the example.
     telegram_bot_token
         The telegram bot token to use (this value should be a secret, so do not share it) for the `TelegramReporter`, if any.
     telegram_chat_id
@@ -217,6 +243,20 @@ class RunManager:
     TypeError
         If a parameter has the incorrect type
 
+    Example Config
+    --------------
+    ::
+            {
+                "bots": {
+                    "bot_name": "bot_token",
+                    "other_bot_name": "other_bot_token"
+                },
+                "chats": {
+                    "chat_name": "chat_id",
+                    "other_chat_name": "other_chat_id"
+                }
+            }
+
     Examples
     --------
     >>> import lip_pps_run_manager as RM
@@ -225,6 +265,8 @@ class RunManager:
     """
 
     _path_directory = Path(".")
+    _bot_name = None
+    _chat_name = None
     _bot_token = None
     _chat_id = None
     _telegram_reporter = None
@@ -233,10 +275,28 @@ class RunManager:
     _in_run_context = False
     _rate_limit = True
 
-    def __init__(self, path_to_run_directory: Path, telegram_bot_token: str = None, telegram_chat_id: str = None, rate_limit: bool = True):
+    def __init__(
+        self,
+        path_to_run_directory: Path,
+        telegram_bot_name: str = None,
+        telegram_chat_name: str = None,
+        telegram_bot_token: str = None,
+        telegram_chat_id: str = None,
+        rate_limit: bool = True,
+    ):
         if not isinstance(path_to_run_directory, Path):
             raise TypeError(
                 "The `path_to_run_directory` must be a Path type object, received object of type {}".format(type(path_to_run_directory))
+            )
+
+        if telegram_bot_name is not None and not isinstance(telegram_bot_name, str):
+            raise TypeError(
+                "The `telegram_bot_name` must be a str type object or None, received object of type {}".format(type(telegram_bot_name))
+            )
+
+        if telegram_chat_name is not None and not isinstance(telegram_chat_name, str):
+            raise TypeError(
+                "The `telegram_chat_name` must be a str type object or None, received object of type {}".format(type(telegram_chat_name))
             )
 
         if telegram_bot_token is not None and not isinstance(telegram_bot_token, str):
@@ -252,19 +312,44 @@ class RunManager:
 
         self._path_directory = path_to_run_directory
 
-        if telegram_bot_token is not None and telegram_chat_id is not None:
+        telegram_config = None
+        if telegram_bot_name is not None or telegram_chat_name is not None:
+            telegram_config = load_telegram_config()
+
+        if telegram_bot_name is not None:
+            self._bot_name = telegram_bot_name
+            self._bot_token = telegram_config["bots"][telegram_bot_name]
+        else:
             self._bot_token = telegram_bot_token
+
+        if telegram_chat_name is not None:
+            self._chat_name = telegram_chat_name
+            self._chat_id = telegram_config["chats"][telegram_chat_name]
+        else:
             self._chat_id = telegram_chat_id
+
+        if self._bot_token is not None and self._chat_id is not None:
             self._rate_limit = rate_limit
+        else:
+            self._bot_token = None
+            self._chat_id = None
 
     def __repr__(self):
         """Get the python representation of this class"""
         if self._bot_token is None or self._chat_id is None:
             return "RunManager({})".format(repr(self.path_directory))
         else:
-            return "RunManager({}, telegram_bot_token={}, telegram_chat_id={}, rate_limit={})".format(
-                repr(self.path_directory), repr(self._bot_token), repr(self._chat_id), repr(self._rate_limit)
-            )
+            classRepr = "RunManager({}".format(repr(self.path_directory))
+            if self._bot_name is not None:
+                classRepr += ", telegram_bot_name={}".format(repr(self._bot_name))
+            else:
+                classRepr += ", telegram_bot_token={}".format(repr(self._bot_token))
+            if self._chat_name is not None:
+                classRepr += ", telegram_chat_name={}".format(repr(self._chat_name))
+            else:
+                classRepr += ", telegram_chat_id={}".format(repr(self._chat_id))
+            classRepr += ", rate_limit={})".format(self._rate_limit)
+            return classRepr
 
     @property
     def path_directory(self) -> Path:
@@ -479,6 +564,8 @@ class RunManager:
         TM._run_created = self._run_created
         TM._in_run_context = self._in_run_context
         if self._telegram_reporter is not None:
+            TM._bot_name = self._bot_name
+            TM._chat_name = self._chat_name
             TM._bot_token = self._bot_token
             TM._chat_id = self._chat_id
             TM._telegram_reporter = self._telegram_reporter
@@ -738,6 +825,18 @@ class TaskManager(RunManager):
         order to ensure that old data from previous runs is cleaned.
     script_to_backup
         `Path` to the script to be backed up to the task directory
+    telegram_bot_name
+        The bot name of the bot to be used to publish the report message
+        to telegram. This property takes precedence over
+        `telegram_bot_token`, which will be ignored if this parameter is
+        passed. A config file should exist with the bot configuration,
+        see the `RunManager` example.
+    telegram_chat_name
+        The chat name of the chat to publish the report messages to
+        telegram. This property takes precedence over
+        `telegram_chat_id`, which will be ignored if this parameter is
+        passed. A config file should exist with the chat configuration,
+        see the `RunManager` example.
     telegram_bot_token
         The telegram bot token to use (this value should be a secret, so
         do not share it) for the `TelegramReporter`, if any.
@@ -797,6 +896,8 @@ class TaskManager(RunManager):
         task_name: str,
         drop_old_data: bool = True,
         script_to_backup: Path = None,
+        telegram_bot_name: str = None,
+        telegram_chat_name: str = None,
         telegram_bot_token: str = None,
         telegram_chat_id: str = None,
         loop_iterations: int = None,
@@ -855,6 +956,8 @@ class TaskManager(RunManager):
 
         super().__init__(
             path_to_run_directory=path_to_run,
+            telegram_bot_name=telegram_bot_name,
+            telegram_chat_name=telegram_chat_name,
             telegram_bot_token=telegram_bot_token,
             telegram_chat_id=telegram_chat_id,
             rate_limit=rate_limit,
@@ -886,17 +989,27 @@ class TaskManager(RunManager):
                 )
             )
         else:
+            if self._bot_name is not None:
+                bot_str = "telegram_bot_name={}".format(repr(self._bot_name))
+            else:
+                bot_str = "telegram_bot_token={}".format(repr(self._bot_token))
+
+            if self._chat_name is not None:
+                chat_str = "telegram_chat_name={}".format(repr(self._chat_name))
+            else:
+                chat_str = "telegram_chat_id={}".format(repr(self._chat_id))
+
             return (
                 "TaskManager({}, {}, drop_old_data={}, script_to_backup={}, "
-                "telegram_bot_token={}, telegram_chat_id={}, loop_iterations={}, "
+                "{}, {}, loop_iterations={}, "
                 "minimum_update_time_seconds={}, minimum_warn_time_seconds={}, "
                 "rate_limit={})".format(
                     repr(self.path_directory),
                     repr(self.task_name),
                     repr(self._drop_old_data),
                     repr(self._script_to_backup),
-                    repr(self._bot_token),
-                    repr(self._chat_id),
+                    bot_str,
+                    chat_str,
                     repr(self._loop_iterations),
                     repr(int(self._minimum_update_time.total_seconds())),
                     repr(int(self._minimum_warn_time.total_seconds())),
