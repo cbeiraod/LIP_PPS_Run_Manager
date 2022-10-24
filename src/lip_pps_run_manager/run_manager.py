@@ -214,6 +214,22 @@ class RunManager:
     file should be placed in the current running directory and have the
     name 'run_manager_telegram_config.json'
 
+    .. code-block::
+        :caption: Example Telegram Bot Configuration File
+        :linenos:
+
+        {
+            "bots": {
+                "bot_name": "bot_token",
+                "other_bot_name": "other_bot_token"
+            },
+            "chats": {
+                "chat_name": "chat_id",
+                "other_chat_name": "other_chat_id"
+            }
+        }
+
+
     Parameters
     ----------
     path_to_run_directory
@@ -242,20 +258,6 @@ class RunManager:
     ------
     TypeError
         If a parameter has the incorrect type
-
-    Example Config
-    --------------
-    ::
-            {
-                "bots": {
-                    "bot_name": "bot_token",
-                    "other_bot_name": "other_bot_token"
-                },
-                "chats": {
-                    "chat_name": "chat_id",
-                    "other_chat_name": "other_chat_id"
-                }
-            }
 
     Examples
     --------
