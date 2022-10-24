@@ -6,7 +6,7 @@ Current (2022-10-24)
 --------------------
 
 * Added common functions for the instruments
-* Started adding SetupManaher to hold the experimental setup
+* Started adding SetupManager to hold the experimental setup
 * Started tests for instruments
 
 0.2.1 (2022-10-24)
