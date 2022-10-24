@@ -7,6 +7,7 @@ Contains classes and functions used to manage the runs and their tasks.
 
 import datetime
 import inspect
+import json
 import shutil
 import traceback
 import warnings
@@ -161,6 +162,37 @@ def create_run(path_to_directory: Path, run_name: str) -> Path:
         )
 
     return run_path
+
+
+def load_telegram_config() -> json:
+    """Load the config file with the telegram configuration information.
+
+    The function searches for a config file in the working directory
+    first with the name 'run_manager_telegram_config.json' and if it
+    does not exist, it tries searching for a config file in the home
+    directory with the name '.run_manager_telegram_config.json'
+
+    Returns
+    -------
+    json
+        The json representation of the config file
+
+    Examples
+    --------
+    >>> import lip_pps_run_manager.run_manager as RM
+    >>> print(RM.create_run(Path("."), "Run0001"))
+    """
+
+    home_config = Path.home() / ".run_manager_telegram_config.json"
+    script_config = Path.cwd() / "run_manager_telegram_config.json"
+
+    if script_config.is_file():
+        config_file = script_config
+    else:  # pragma: no cover
+        config_file = home_config
+
+    with config_file.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 class RunManager:
