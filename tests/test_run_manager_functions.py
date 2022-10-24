@@ -76,3 +76,29 @@ def test_fail_create_run_function():
         assert str(e) == (
             "Unable to create the run '{}' in '{}' because a directory with that name already exists.".format(runName, str(basePath))
         )
+
+
+def test_load_telegram_config_function():
+    config_file = Path.cwd() / "run_manager_telegram_config.json"
+    with config_file.open("w", encoding="utf-8") as file:
+        file.write("{\n")
+        file.write('  "bots": {\n')
+        file.write('    "testBot": "bot_token"\n')
+        file.write("  },\n")
+        file.write('  "chats": {\n')
+        file.write('    "testChat": "chat_id"\n')
+        file.write("  }\n")
+        file.write("}\n")
+
+        file.close()
+
+    cfg = internalRM.load_telegram_config()
+
+    assert "bots" in cfg
+    assert "testBot" in cfg["bots"]
+    assert cfg["bots"]["testBot"] == "bot_token"
+    assert "chats" in cfg
+    assert "testChat" in cfg["chats"]
+    assert cfg["chats"]["testChat"] == "chat_id"
+
+    config_file.unlink()
