@@ -2,10 +2,12 @@
 Changelog
 =========
 
-Current (2022-10-19)
+Current (2022-10-24)
 --------------------
 
 * Added the version of LIP-PPS-Run-Manager to the script backup
+* Added the possibility to load bot details from a config file using names. Names override explicit tokens and ids
+* Started adding a class to handle a Keithley 6487 device
 
 0.2.0 (2022-10-19)
 ------------------
