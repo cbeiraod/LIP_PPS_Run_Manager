@@ -8,6 +8,7 @@ Current (2022-10-24)
 * Added common functions for the instruments
 * Started adding SetupManager to hold the experimental setup
 * Started tests for instruments
+* Added library version to task report file
 
 0.2.1 (2022-10-24)
 ------------------
