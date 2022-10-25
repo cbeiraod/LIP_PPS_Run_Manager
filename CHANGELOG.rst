@@ -5,6 +5,10 @@ Changelog
 Current (2022-10-24)
 --------------------
 
+
+0.2.2 (2022-10-25)
+------------------
+
 * Added common functions for the instruments
 * Started adding SetupManager to hold the experimental setup
 * Started tests for instruments
