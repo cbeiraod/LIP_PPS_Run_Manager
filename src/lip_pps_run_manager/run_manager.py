@@ -378,6 +378,20 @@ class RunManager:
     #    self._path_directory = value
 
     @property
+    def data_directory(self) -> Path:
+        """The data directory property getter method
+
+        This method fetches the data directory path attribute,
+        which points to the path containing the run data of this run.
+
+        Returns
+        -------
+        Path
+            The path to the directory where the data is stored.
+        """
+        return self._path_directory / "data"
+
+    @property
     def run_name(self) -> str:
         """The name of the run property getter method"""
         return self._path_directory.parts[-1]

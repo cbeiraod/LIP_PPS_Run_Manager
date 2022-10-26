@@ -5,6 +5,7 @@ Changelog
 Current (2022-10-24)
 --------------------
 
+* Added a data_directory property to the RunManager
 
 0.2.2 (2022-10-25)
 ------------------
