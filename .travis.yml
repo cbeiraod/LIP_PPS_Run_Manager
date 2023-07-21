@@ -33,6 +33,9 @@ matrix:
         - TOXENV=py310,codecov
       python: '3.10'
     - env:
+        - TOXENV=py311,codecov
+      python: '3.11'
+    - env:
         - TOXENV=pypy37,codecov
         - TOXPYTHON=pypy3
       python: 'pypy3'
