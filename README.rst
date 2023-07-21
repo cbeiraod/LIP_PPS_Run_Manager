@@ -16,7 +16,7 @@ Overview
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
 .. |docs| image:: https://readthedocs.org/projects/lip-pps-run-manager/badge/?version=latest
-    :target: https://LIP_PPS_Run_Manager.readthedocs.io/
+    :target: https://lip-pps-run-manager.readthedocs.io/
     :alt: Documentation Status
 
 .. |travis| image:: https://api.travis-ci.com/cbeiraod/LIP_PPS_Run_Manager.svg?branch=main
@@ -79,7 +79,7 @@ Documentation
 =============
 
 
-https://LIP_PPS_Run_Manager.readthedocs.io/
+https://lip-pps-run-manager.readthedocs.io/en/latest/
 
 
 Development

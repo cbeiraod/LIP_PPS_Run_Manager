@@ -59,8 +59,8 @@ setup(
         'Topic :: Utilities',
     ],
     project_urls={
-        'Documentation': 'https://LIP_PPS_Run_Manager.readthedocs.io/',
-        'Changelog': 'https://LIP_PPS_Run_Manager.readthedocs.io/en/latest/changelog.html',
+        'Documentation': 'https://lip-pps-run-manager.readthedocs.io/',
+        'Changelog': 'https://lip-pps-run-manager.readthedocs.io/en/latest/changelog.html',
         'Issue Tracker': 'https://github.com/cbeiraod/LIP_PPS_Run_Manager/issues',
     },
     keywords=[
