@@ -5,6 +5,9 @@ Changelog
 Current (2023-07-23)
 --------------------
 
+0.2.3 (2023-07-23)
+--------------------
+
 * Added a backup_directory property to the RunManager
 * Added the copy_file_to method to the RunManager
 * Added the backup_file method to the RunManager
