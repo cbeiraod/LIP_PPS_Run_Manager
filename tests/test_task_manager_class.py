@@ -1825,3 +1825,95 @@ def test_send_warnings_multiple_warnings():
             assert message1 in Tobias._telegram_reporter._session["data"]["text"]
             assert message2 in Tobias._telegram_reporter._session["data"]["text"]
             assert Tobias._accumulated_warnings == {}
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        source = handler.run_path / "test_in_file.txt"
+
+        assert not source.exists()
+
+        with open(source, "w") as file:
+            file.write("Hello!\n")
+            file.write("This is a test file\n")
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            Tobias.backup_file(source)
+
+            assert (Tobias.task_path / (source.name + ".bak")).exists()
+
+            import filecmp
+
+            assert filecmp.cmp(source, (Tobias.task_path / (source.name + ".bak")))
+
+        source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_bad_type_source():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        source = 2
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            try:
+                Tobias.backup_file(source)
+                raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+            except TypeError as e:
+                assert str(e) == "The `source` must be a Path type object, received object of type <class 'int'> instead"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_source_does_not_exist():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        source = handler.run_path / "test_in_file.txt"
+
+        assert not source.exists()
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            try:
+                Tobias.backup_file(source)
+                raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+            except RuntimeError as e:
+                assert str(e) == "The source file does not exist or it is not a file."
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_source_is_not_file():
+    with PrepareRunDir() as handler:
+        task_name = "testTask"
+        drop_old_data = True
+        script_to_backup = None
+        loop_iterations = None
+
+        source = handler.run_path
+
+        with RM.TaskManager(
+            handler.run_path, task_name, drop_old_data=drop_old_data, script_to_backup=script_to_backup, loop_iterations=loop_iterations
+        ) as Tobias:
+            try:
+                Tobias.backup_file(source)
+                raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+            except RuntimeError as e:
+                assert str(e) == "The source file does not exist or it is not a file."
