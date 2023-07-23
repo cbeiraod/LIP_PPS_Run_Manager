@@ -9,7 +9,7 @@ class DeviceBase:
         self._name = device_name
 
     def safe_shutdown(self):
-        raise RuntimeError("The device type {} has not had its safe shutdown set...".format(self._type))
+        raise RuntimeError("The device type {} has not had its safe shutdown set...".format(self._type))  # pragma: no cover
 
 
 class VISADevice(DeviceBase):
@@ -36,4 +36,5 @@ class SetupManager:
     _devices = {}
 
     def __init__(self):
-        pass
+        pass  # pragma: no cover
+        # Still under construction
