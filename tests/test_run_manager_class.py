@@ -1259,7 +1259,6 @@ def test_copy_file_to_destination_is_file_to_create():
     run_name = "Run0001"
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
-    # ensure_exists(Path(tmpdir))
 
     source = Path(tmpdir) / "test_in_file.txt"
     destination = runPath / "copied_file.txt"
@@ -1291,7 +1290,6 @@ def test_copy_file_to_destination_is_dir():
     run_name = "Run0001"
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
-    # ensure_exists(Path(tmpdir))
 
     source = Path(tmpdir) / "test_in_file.txt"
     destination = runPath
@@ -1324,7 +1322,6 @@ def test_copy_file_to_destination_is_file_to_overwrite():
     run_name = "Run0001"
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
-    # ensure_exists(Path(tmpdir))
 
     source = Path(tmpdir) / "test_in_file.txt"
     destination = runPath / "copied_file.txt"
@@ -1361,7 +1358,6 @@ def test_copy_file_to_destination_is_file_no_overwrite():
     run_name = "Run0001"
     runPath = Path(tmpdir) / run_name
     ensure_clean(runPath)
-    # ensure_exists(Path(tmpdir))
 
     source = Path(tmpdir) / "test_in_file.txt"
     destination = runPath / "copied_file.txt"
@@ -1501,3 +1497,126 @@ def test_copy_file_to_destination_parent_does_not_exist():
             assert str(e) == "The parent of the destination file does not exist, unable to create the destination file"
 
     source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir) / "test_in_file.txt"
+
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+
+        assert not John.backup_directory.exists()
+
+        John.backup_file(source)
+
+        assert John.backup_directory.exists()
+
+        assert (John.backup_directory / source.name).exists()
+
+        import filecmp
+
+        assert filecmp.cmp(source, (John.backup_directory / source.name))
+
+    source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_backup_dir_exists():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir) / "test_in_file.txt"
+
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+
+        assert not John.backup_directory.exists()
+        John.backup_directory.mkdir()
+        assert John.backup_directory.exists()
+
+        John.backup_file(source)
+
+        assert (John.backup_directory / source.name).exists()
+
+        import filecmp
+
+        assert filecmp.cmp(source, (John.backup_directory / source.name))
+
+    source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_bad_type_source():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = 2
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+
+        try:
+            John.backup_file(source)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except TypeError as e:
+            assert str(e) == "The `source` must be a Path type object, received object of type <class 'int'> instead"
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_source_does_not_exist():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir) / "test_in_file.txt"
+
+    assert not source.exists()
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.backup_file(source)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except RuntimeError as e:
+            assert str(e) == "The source file does not exist or it is not a file."
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_backup_file_source_is_not_file():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir)
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.backup_file(source)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except RuntimeError as e:
+            assert str(e) == "The source file does not exist or it is not a file."
