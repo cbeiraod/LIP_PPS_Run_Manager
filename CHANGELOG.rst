@@ -2,8 +2,15 @@
 Changelog
 =========
 
-Current (2022-10-24)
+Current (2023-07-23)
 --------------------
+
+* Added a backup_directory property to the RunManager
+* Added the copy_file_to method to the RunManager
+* Added the backup_file method to the RunManager
+
+Not numbered (2022-10-24)
+-------------------------
 
 * Added a data_directory property to the RunManager
 
