@@ -20,7 +20,7 @@ def read(*names, **kwargs):
 
 setup(
     name='lip-pps-run-manager',
-    version='0.2.2',
+    version='0.2.3',
     license='MIT',
     description='Run Manager used in the LIP PPS software stack for handling data taking and analysis',
     long_description='{}\n{}'.format(
