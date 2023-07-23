@@ -46,6 +46,7 @@ def test_init_no_bot():
     assert John._path_directory == runPath
     assert John.path_directory == runPath
     assert John.data_directory == runPath / "data"
+    assert John.backup_directory == runPath / "backup"
     assert John.run_name == run_name
     assert John._bot_token is None
     assert John._chat_id is None
