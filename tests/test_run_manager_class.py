@@ -1389,6 +1389,7 @@ def test_copy_file_to_destination_is_file_no_overwrite():
     source.unlink()
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_copy_file_to_bad_type_source():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
@@ -1409,6 +1410,7 @@ def test_copy_file_to_bad_type_source():
             assert str(e) == "The `source` must be a Path type object, received object of type <class 'int'> instead"
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_copy_file_to_bad_type_destination():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
@@ -1429,6 +1431,7 @@ def test_copy_file_to_bad_type_destination():
             assert str(e) == "The `destination` must be a Path type object, received object of type <class 'int'> instead"
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_copy_file_to_source_does_not_exist():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
@@ -1450,6 +1453,7 @@ def test_copy_file_to_source_does_not_exist():
             assert str(e) == "The source file does not exist or it is not a file."
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_copy_file_to_source_is_not_file():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
@@ -1470,6 +1474,7 @@ def test_copy_file_to_source_is_not_file():
             assert str(e) == "The source file does not exist or it is not a file."
 
 
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
 def test_copy_file_to_destination_parent_does_not_exist():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
