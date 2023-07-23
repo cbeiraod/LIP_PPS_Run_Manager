@@ -392,6 +392,20 @@ class RunManager:
         return self._path_directory / "data"
 
     @property
+    def backup_directory(self) -> Path:
+        """The backup directory property getter method
+
+        This method fetches the backup directory path attribute,
+        which points to the path containing the backup data of this run.
+
+        Returns
+        -------
+        Path
+            The path to the directory where the backup data is stored.
+        """
+        return self._path_directory / "backup"
+
+    @property
     def run_name(self) -> str:
         """The name of the run property getter method"""
         return self._path_directory.parts[-1]
