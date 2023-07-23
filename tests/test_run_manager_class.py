@@ -14,6 +14,11 @@ def ensure_clean(path: Path):  # pragma: no cover
         shutil.rmtree(path)
 
 
+def ensure_exists(path: Path):  # pragma: no cover
+    if not path.exists():
+        path.mkdir()
+
+
 def prepare_config_file(bot_name, bot_token, chat_name, chat_id):  # pragma: no cover
     config_file = Path.cwd() / "run_manager_telegram_config.json"
     with config_file.open("w", encoding="utf-8") as file:
@@ -1245,3 +1250,248 @@ def test_handle_task_with_bot():
         assert David._chat_id == John._chat_id
         assert David._telegram_reporter == John._telegram_reporter
         assert David._status_message_id == John._status_message_id
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_copy_file_to_destination_is_file_to_create():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+    # ensure_exists(Path(tmpdir))
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = runPath / "copied_file.txt"
+
+    assert not destination.exists()
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+
+        John.copy_file_to(source, destination)
+
+        assert destination.exists()
+
+        import filecmp
+
+        assert filecmp.cmp(source, destination)
+
+    source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_copy_file_to_destination_is_dir():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+    # ensure_exists(Path(tmpdir))
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = runPath
+
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        assert destination.exists()
+        assert destination.is_dir()
+
+        John.copy_file_to(source, destination)
+
+        assert (destination / "test_in_file.txt").exists()
+
+        import filecmp
+
+        assert filecmp.cmp(source, (destination / "test_in_file.txt"))
+
+    source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_copy_file_to_destination_is_file_to_overwrite():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+    # ensure_exists(Path(tmpdir))
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = runPath / "copied_file.txt"
+
+    assert not destination.exists()
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+
+        with open(destination, "w") as file:
+            file.write("This is a mostly empty file.\n")
+
+        assert destination.exists()
+
+        John.copy_file_to(source, destination, overwrite=True)
+
+        assert destination.exists()
+
+        import filecmp
+
+        assert filecmp.cmp(source, destination)
+
+    source.unlink()
+
+
+@patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
+def test_copy_file_to_destination_is_file_no_overwrite():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+    # ensure_exists(Path(tmpdir))
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = runPath / "copied_file.txt"
+
+    assert not destination.exists()
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+
+        with open(destination, "w") as file:
+            file.write("This is a mostly empty file.\n")
+
+        assert destination.exists()
+
+        try:
+            John.copy_file_to(source, destination)
+        except RuntimeError as e:
+            assert str(e) == "The destination file already exists and the overwrite flag is not set"
+
+    source.unlink()
+
+
+def test_copy_file_to_bad_type_source():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = 2
+    destination = runPath / "copied_file.txt"
+
+    assert not destination.exists()
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.copy_file_to(source, destination)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except TypeError as e:
+            assert str(e) == "The `source` must be a Path type object, received object of type <class 'int'> instead"
+
+
+def test_copy_file_to_bad_type_destination():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = 2
+
+    assert not source.exists()
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.copy_file_to(source, destination)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except TypeError as e:
+            assert str(e) == "The `destination` must be a Path type object, received object of type <class 'int'> instead"
+
+
+def test_copy_file_to_source_does_not_exist():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = runPath / "copied_file.txt"
+
+    assert not destination.exists()
+    assert not source.exists()
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.copy_file_to(source, destination)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except RuntimeError as e:
+            assert str(e) == "The source file does not exist or it is not a file."
+
+
+def test_copy_file_to_source_is_not_file():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir)
+    destination = runPath / "copied_file.txt"
+
+    assert not destination.exists()
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.copy_file_to(source, destination)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except RuntimeError as e:
+            assert str(e) == "The source file does not exist or it is not a file."
+
+
+def test_copy_file_to_destination_parent_does_not_exist():
+    tmpdir = tempfile.gettempdir()
+    run_name = "Run0001"
+    runPath = Path(tmpdir) / run_name
+    ensure_clean(runPath)
+
+    source = Path(tmpdir) / "test_in_file.txt"
+    destination = runPath / "this_dir_does_not_exist" / "copied_file.txt"
+
+    assert not destination.exists()
+    assert not destination.parent.exists()
+    assert not source.exists()
+
+    with open(source, "w") as file:
+        file.write("Hello!\n")
+        file.write("This is a test file\n")
+
+    with RM.RunManager(runPath) as John:
+        John.create_run(raise_error=True)
+        try:
+            John.copy_file_to(source, destination)
+            raise Exception("Passed through a fail condition without failing")  # pragma: no cover
+        except RuntimeError as e:
+            assert str(e) == "The parent of the destination file does not exist, unable to create the destination file"
+
+    source.unlink()
