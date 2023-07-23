@@ -835,6 +835,109 @@ class RunManager:
 
         return self._telegram_response['result']['message_id']
 
+    def copy_file_to(self, source: Path, destination: Path, overwrite: bool = False):
+        """Creates a copy of the source file to the destination.
+
+        Parameters
+        ----------
+        source
+            The path to the source file. The file must exist
+        destination
+            The path to the destination. If the destination does not exist, the
+            parent must exist and the file will be created. If the destination
+            does exist, it must be a directory and a file with the same name as
+            the source will be created. If the destination exists and is a file,
+            action will only be taken if the `overwrite` flag is set.
+        overwrite
+            Whether to overwrite the destination file in case it already exists
+
+        Raises
+        ------
+        TypeError
+            If the type of one of the parameters is not correct
+        RuntimeError
+            If the `source` does not exist, if the `destination` does not exist
+            and the parent directory does not exist or if the `destination`
+            does exist and `overwrite` is not set.
+        SameFileError
+            If `source` and `destination` are the same file, a SameFileError
+            will be raised.
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> from pathlib import Path
+        >>> with RM.RunManager("Run0001") as John
+        ...   John.create_run(True)
+        ...   John.copy_file_to(Path("src.file"), Path("copy_of.file"))
+
+        The above code should create a copy of the `src.file` in the
+        `copy_of.file`, if the `src.file` exists. If not, a RuntimeError
+        will be raised.
+
+        """
+        if not isinstance(source, Path):
+            raise TypeError(f"The `source` must be a Path type object, received object of type {type(source)} instead")
+
+        if not isinstance(destination, Path):
+            raise TypeError(f"The `destination` must be a Path type object, received object of type {type(destination)} instead")
+
+        if not source.exists() or not source.is_file():
+            raise RuntimeError("The source file does not exist or it is not a file.")
+
+        if not destination.exists():
+            if not destination.parent.exists():
+                raise RuntimeError("The parent of the destination file does not exist, unable to create the destination file")
+        else:  # Destination exists
+            if destination.is_file():
+                if not overwrite:
+                    raise RuntimeError("The destination file already exists and the overwrite flag is not set")
+            else:
+                destination = destination / source.name
+
+        shutil.copy(source, destination)
+
+    def backup_file(self, source: Path):
+        """Creates a backup of the file inside the run directory under the
+        backup subdirectory.
+
+        Parameters
+        ----------
+        source
+            The path to the source file. The file must exist
+
+        Raises
+        ------
+        TypeError
+            If the type of one of the parameters is not correct
+        RuntimeError
+            If the `source` does not exist.
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> from pathlib import Path
+        >>> with RM.RunManager("Run0001") as John
+        ...   John.create_run(True)
+        ...   John.backup_file(Path("src.file"))
+
+        The above code should create a backup copy of the `src.file` in the
+        backup directory of the run, if the `src.file` exists. If not, a
+        RuntimeError will be raised.
+
+        """
+        if not isinstance(source, Path):
+            raise TypeError(f"The `source` must be a Path type object, received object of type {type(source)} instead")
+
+        if not source.exists() or not source.is_file():
+            raise RuntimeError("The source file does not exist or it is not a file.")
+
+        backup_path = self.backup_directory
+        if not backup_path.exists():
+            backup_path.mkdir()
+
+        self.copy_file_to(source, backup_path, overwrite=True)
+
 
 class TaskManager(RunManager):
     """Class to manage PPS Tasks
@@ -1357,3 +1460,43 @@ class TaskManager(RunManager):
         else:
             self._supposedly_just_sent_warnings = self._accumulated_warnings  # Do this just because of the testing
             self._accumulated_warnings = {}
+
+    def backup_file(self, source: Path):
+        """Creates a backup of the source file inside the task directory.
+
+        Parameters
+        ----------
+        source
+            The path to the source file. The file must exist
+
+        Raises
+        ------
+        TypeError
+            If the type of one of the parameters is not correct
+        RuntimeError
+            If the `source` does not exist.
+
+        Examples
+        --------
+        >>> import lip_pps_run_manager as RM
+        >>> from pathlib import Path
+        >>> with RM.RunManager("Run0001") as John
+        ...   John.create_run(True)
+        ...   John.backup_file(Path("src.file"))
+
+        TODO: Fix this examples
+
+        The above code should create a backup copy of the `src.file` in the
+        backup directory of the run, if the `src.file` exists. If not, a
+        RuntimeError will be raised.
+
+        """
+        if not isinstance(source, Path):
+            raise TypeError(f"The `source` must be a Path type object, received object of type {type(source)} instead")
+
+        if not source.exists() or not source.is_file():
+            raise RuntimeError("The source file does not exist or it is not a file.")
+
+        backup_path = self.task_path
+
+        self.copy_file_to(source, backup_path / (source.name + ".bak"), overwrite=True)
