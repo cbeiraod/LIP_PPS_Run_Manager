@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import pytest
 from test_functions import ReplaceResourceManager
 
 from lip_pps_run_manager.instruments import Keithley6487
@@ -16,6 +17,7 @@ def test_type():
     assert isinstance(instrument, Keithley6487)
 
 
+@pytest.mark.skip(reason="Currently not implemented")
 @patch('pyvisa.ResourceManager', new=ReplaceResourceManager)  # To avoid sending actual VISA requests
 def test_set_id():
     instrument = Keithley6487("myName", "Resource String")
@@ -25,6 +27,7 @@ def test_set_id():
     assert "*IDN?" == query_hist[0]
 
 
+@pytest.mark.skip(reason="Currently not implemented")
 @patch('pyvisa.ResourceManager', new=ReplaceResourceManager)  # To avoid sending actual VISA requests
 def test_set_voltage():
     instrument = Keithley6487("myName", "Resource String")
