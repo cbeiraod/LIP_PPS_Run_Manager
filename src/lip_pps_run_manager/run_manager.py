@@ -8,6 +8,7 @@ Contains classes and functions used to manage the runs and their tasks.
 import datetime
 import inspect
 import json
+import logging
 import shutil
 import traceback
 import warnings
@@ -17,6 +18,8 @@ import humanize
 
 from lip_pps_run_manager import __version__
 from lip_pps_run_manager.telegram_reporter import TelegramReporter
+
+# TODO: Add logger options to the managers
 
 
 def clean_path(path_to_clean: Path) -> Path:
@@ -276,6 +279,7 @@ class RunManager:
     _status_message_id = None
     _in_run_context = False
     _rate_limit = True
+    _logger = None
 
     def __init__(
         self,
@@ -335,6 +339,8 @@ class RunManager:
         else:
             self._bot_token = None
             self._chat_id = None
+
+        self._logger = logging.getLogger(self.run_name)
 
     def __repr__(self):
         """Get the python representation of this class"""
@@ -1104,6 +1110,8 @@ class TaskManager(RunManager):
         if loop_iterations is not None:
             self._processed_iterations = 0
 
+        self._logger = logging.getLogger(self.run_name + ":" + self.task_name)
+
     def __repr__(self):
         """Get the python representation of this class"""
         if self._bot_token is None or self._chat_id is None:
@@ -1234,6 +1242,16 @@ class TaskManager(RunManager):
             raise RuntimeError(
                 "Tried calling _update_status() while not inside a task context. Use the 'with TaskManager as handle' syntax"
             )
+
+        message = f'Processing task {self.task_name} of run {self.run_name}'
+        if self.expected_finish_time is not None:
+            message += '\n  - Progress: {} % ({}/{})\n  - Expected finish: {}'.format(
+                int(float(self.processed_iterations) / self._loop_iterations * 100),
+                int(self.processed_iterations),
+                int(self._loop_iterations),
+                self.expected_finish_time.strftime("%Y-%m-%d %H:%M"),
+            )
+        self._logger.info(message)
 
         if self._telegram_reporter is not None:
             create_status = False
@@ -1417,6 +1435,8 @@ class TaskManager(RunManager):
 
         if not hasattr(self, "_accumulated_warnings"):
             self._accumulated_warnings = {}
+
+        self._logger.warning(message)
 
         if message not in self._accumulated_warnings:
             self._accumulated_warnings[message] = 1
