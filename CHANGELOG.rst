@@ -2,7 +2,7 @@
 Changelog
 =========
 
-Current (2023-07-25)
+0.3.0 (2023-07-25)
 --------------------
 
 * Fixed the name of the loop_iterations parameter in the handle_task method. **this is a breaking change**
