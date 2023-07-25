@@ -6,7 +6,7 @@ Current (2023-07-25)
 --------------------
 
 * Fixed the name of the loop_iterations parameter in the handle_task method. **this is a breaking change**
-* Added status information when looped tasks progress
+* Added status information when looped tasks progresses
 
 0.2.3 (2023-07-23)
 --------------------
