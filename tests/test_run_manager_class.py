@@ -1136,7 +1136,7 @@ def test_handle_task_bad_type_backup_python_file():
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests
-def test_handle_task_bad_type_telegram_loop_iterations():
+def test_handle_task_bad_type_loop_iterations():
     tmpdir = tempfile.gettempdir()
     run_name = "Run0001"
     bot_token = "bot_token"
@@ -1147,10 +1147,10 @@ def test_handle_task_bad_type_telegram_loop_iterations():
 
     with RM.RunManager(runPath, telegram_bot_token=bot_token, telegram_chat_id=chat_id, rate_limit=rate_limit) as John:
         try:
-            John.handle_task("myTask", telegram_loop_iterations="2")
+            John.handle_task("myTask", loop_iterations="2")
             raise Exception("Passed through a fail condition without failing")  # pragma: no cover
         except TypeError as e:
-            assert str(e) == "The `telegram_loop_iterations` must be a int type object or None, received object of type <class 'str'>"
+            assert str(e) == "The `loop_iterations` must be a int type object or None, received object of type <class 'str'>"
 
 
 @patch('requests.Session', new=SessionReplacement)  # To avoid sending actual http requests

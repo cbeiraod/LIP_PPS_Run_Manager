@@ -484,7 +484,7 @@ class RunManager:
         task_name: str,
         drop_old_data: bool = True,
         backup_python_file: bool = True,
-        telegram_loop_iterations: int = None,
+        loop_iterations: int = None,
         minimum_update_time_seconds: int = 60,
         minimum_warn_time_seconds: int = 60,
     ):
@@ -506,9 +506,10 @@ class RunManager:
             If `True` a copy of the current python file will be backed
             up in the task directory. Useful for keeping a log of
             exactly what was done.
-        telegram_loop_iterations
-            If telegram reporting is enabled, this is the number of
-            expected iterations in the processing loop. Use
+        loop_iterations
+            This is the number of expected iterations in the processing loop.
+            Used to print out progress reporting to the terminal. If telegram
+            reporting is enabled, reports will be sent to telegram as well. Use
             `loop_tick()` to keep track of progress during the loop.
         minimum_update_time_seconds
             The minimum time allowed between updates to telegram. This
@@ -554,11 +555,9 @@ class RunManager:
                 "The `backup_python_file` must be a bool type object, received object of type {}".format(type(backup_python_file))
             )
 
-        if telegram_loop_iterations is not None and not isinstance(telegram_loop_iterations, int):
+        if loop_iterations is not None and not isinstance(loop_iterations, int):
             raise TypeError(
-                "The `telegram_loop_iterations` must be a int type object or None, received object of type {}".format(
-                    type(telegram_loop_iterations)
-                )
+                "The `loop_iterations` must be a int type object or None, received object of type {}".format(type(loop_iterations))
             )
 
         if not isinstance(minimum_update_time_seconds, int):
@@ -587,7 +586,7 @@ class RunManager:
             task_name=task_name,
             drop_old_data=drop_old_data,
             script_to_backup=script_to_backup,
-            loop_iterations=telegram_loop_iterations,
+            loop_iterations=loop_iterations,
             minimum_update_time_seconds=minimum_update_time_seconds,
             minimum_warn_time_seconds=minimum_warn_time_seconds,
         )
